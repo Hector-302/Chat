@@ -8,7 +8,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Service
-public class UserRegistry {
+public class ServicesUserRegistry {
 
     private final Map<String, String> users = new ConcurrentHashMap<>();
 
