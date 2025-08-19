@@ -9,6 +9,7 @@ var messageInput = document.querySelector('#message');
 var messageArea = document.querySelector('#messageArea');
 var userListElement = document.querySelector('#userList');
 var connectingElement = document.querySelector('.connecting');
+var backToLobbyButton = document.querySelector('#back-to-lobby');
 
 var stompClient = null;
 var username = null;
@@ -110,6 +111,13 @@ function openChat(user) {
     messages.forEach(appendMessage);
 }
 
+function returnToLobby() {
+    currentRecipient = null;
+    chatPage.classList.add('hidden');
+    lobbyPage.classList.remove('hidden');
+    messageArea.innerHTML = '';
+}
+
 
 function addMessageToConversation(user, message) {
     if(!conversations[user]) {
@@ -159,3 +167,4 @@ function getAvatarColor(messageSender) {
 
 usernameForm.addEventListener('submit', connect, true)
 messageForm.addEventListener('submit', sendMessage, true)
+backToLobbyButton.addEventListener('click', returnToLobby, true)
