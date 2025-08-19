@@ -30,6 +30,12 @@ public class ChatController {
         return chatMessage;
     }
 
+    @MessageMapping("/chat.privateMessage")
+    public void privateMessage(@Payload ChatMessage msg) {
+        messagingTemplate.convertAndSendToUser(
+                msg.getRecipient(), "/queue/messages", msg);
+    }
+
     @MessageMapping("/chat.addUser")
     @SendTo("/topic/public")
     public ChatMessage addUser(@Payload ChatMessage chatMessage,
