@@ -132,6 +132,39 @@ button.accent {
     margin-top: 10px;
 }
 
+#lobby-page {
+    text-align: center;
+}
+
+.lobby-container {
+    background: #fff;
+    box-shadow: 0 1px 11px rgba(0, 0, 0, 0.27);
+    border-radius: 2px;
+    width: 100%;
+    max-width: 500px;
+    display: inline-block;
+    margin-top: 42px;
+    position: relative;
+    padding: 35px 55px;
+}
+
+#userList {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+    text-align: left;
+}
+
+#userList li {
+    padding: 10px 20px;
+    border-bottom: 1px solid #f4f4f4;
+    cursor: pointer;
+}
+
+#userList li:hover {
+    background-color: #f4f4f4;
+}
+
 
 #chat-page {
     position: relative;
