@@ -23,8 +23,9 @@ function connect(event) {
 
     if(username) {
         usernamePage.classList.add('hidden');
-        // Mostramos el lobby inmediatamente, el contenido se cargará al conectar.
+        // Mostramos el lobby y nos aseguramos de que el chat permanezca oculto.
         lobbyPage.classList.remove('hidden');
+        chatPage.classList.add('hidden');
 
         var socket = new SockJS('/ws');
         stompClient = Stomp.over(socket);
@@ -125,14 +126,17 @@ function onMessageReceived(payload) {
 }
 
 function onUsersReceived(payload) {
-    var users = JSON.parse(payload.body);
-    userListElement.innerHTML = ''; // Limpiamos la lista anterior
+    // Excluimos al usuario actual y actualizamos la lista en tiempo real
+    var users = JSON.parse(payload.body).filter(function(user) {
+        return user !== username;
+    });
 
-    // --- LÓGICA PARA MOSTRAR MENSAJE SI NO HAY USUARIOS ---
+    userListElement.innerHTML = '';
+
     if (users.length === 0) {
         var noUsersLi = document.createElement('li');
         noUsersLi.textContent = 'No hay usuarios conectados.';
-        noUsersLi.style.fontStyle = 'italic'; // Opcional: para darle un estilo diferente
+        noUsersLi.style.fontStyle = 'italic';
         noUsersLi.style.color = '#888';
         userListElement.appendChild(noUsersLi);
     } else {
@@ -140,13 +144,11 @@ function onUsersReceived(payload) {
             var li = document.createElement('li');
             li.appendChild(document.createTextNode(user));
 
-            // Tu lógica para cambiar de vista al hacer clic es correcta.
             li.addEventListener('click', function() {
-                // Aquí podrías añadir lógica para un chat privado si quisieras.
-                // Por ahora, simplemente vamos a la sala de chat pública.
                 lobbyPage.classList.add('hidden');
                 chatPage.classList.remove('hidden');
             });
+
             userListElement.appendChild(li);
         });
     }
@@ -163,5 +165,5 @@ function getAvatarColor(messageSender) {
     return colors[index];
 }
 
-usernameForm.addEventListener('submit', connect, true)
-messageForm.addEventListener('submit', sendMessage, true)
+usernameForm.addEventListener('submit', connect, true);
+messageForm.addEventListener('submit', sendMessage, true);
