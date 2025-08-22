@@ -23,35 +23,50 @@ function connect(event) {
 
     if(username) {
         usernamePage.classList.add('hidden');
+        // Mostramos el lobby inmediatamente, el contenido se cargará al conectar.
         lobbyPage.classList.remove('hidden');
 
         var socket = new SockJS('/ws');
         stompClient = Stomp.over(socket);
 
-        stompClient.connect({}, onConnected, onError);
+        // --- CORRECCIÓN CLAVE AQUÍ ---
+        // Pasamos el username como una cabecera en la conexión.
+        var headers = {
+            username: username
+        };
+        stompClient.connect(headers, onConnected, onError); // <-- ¡Aquí está el cambio!
     }
     event.preventDefault();
 }
 
 
 function onConnected() {
-    // Subscribe to the Public Topic
+    // Suscribirse a los topics
     stompClient.subscribe('/topic/public', onMessageReceived);
     stompClient.subscribe('/topic/users', onUsersReceived);
 
-    // Tell your username to the server
+    // Enviar el mensaje de "JOIN" para que aparezca en el chat público
+    // Esta acción es ahora solo para notificar en el chat, no para registrar al usuario.
     stompClient.send("/app/chat.addUser",
         {},
         JSON.stringify({sender: username, type: 'JOIN'})
     )
 
+    // Ocultamos el mensaje "Connecting..." que está en la página de chat
     connectingElement.classList.add('hidden');
 }
 
 
 function onError(error) {
-    connectingElement.textContent = 'Could not connect to WebSocket server. Please refresh this page to try again!';
-    connectingElement.style.color = 'red';
+    // Escondemos el lobby y mostramos la página de login de nuevo con un error.
+    lobbyPage.classList.add('hidden');
+    usernamePage.classList.remove('hidden');
+
+    // Mostramos un mensaje de error más visible para el usuario
+    var errorElement = document.createElement('p');
+    errorElement.textContent = 'No se pudo conectar al servidor WebSocket. Por favor, revisa tu nombre de usuario e inténtalo de nuevo.';
+    errorElement.style.color = 'red';
+    usernamePage.querySelector('.username-page-container').appendChild(errorElement);
 }
 
 
@@ -111,16 +126,30 @@ function onMessageReceived(payload) {
 
 function onUsersReceived(payload) {
     var users = JSON.parse(payload.body);
-    userListElement.innerHTML = '';
-    users.forEach(function(user) {
-        var li = document.createElement('li');
-        li.appendChild(document.createTextNode(user));
-        li.addEventListener('click', function() {
-            lobbyPage.classList.add('hidden');
-            chatPage.classList.remove('hidden');
+    userListElement.innerHTML = ''; // Limpiamos la lista anterior
+
+    // --- LÓGICA PARA MOSTRAR MENSAJE SI NO HAY USUARIOS ---
+    if (users.length === 0) {
+        var noUsersLi = document.createElement('li');
+        noUsersLi.textContent = 'No hay usuarios conectados.';
+        noUsersLi.style.fontStyle = 'italic'; // Opcional: para darle un estilo diferente
+        noUsersLi.style.color = '#888';
+        userListElement.appendChild(noUsersLi);
+    } else {
+        users.forEach(function(user) {
+            var li = document.createElement('li');
+            li.appendChild(document.createTextNode(user));
+
+            // Tu lógica para cambiar de vista al hacer clic es correcta.
+            li.addEventListener('click', function() {
+                // Aquí podrías añadir lógica para un chat privado si quisieras.
+                // Por ahora, simplemente vamos a la sala de chat pública.
+                lobbyPage.classList.add('hidden');
+                chatPage.classList.remove('hidden');
+            });
+            userListElement.appendChild(li);
         });
-        userListElement.appendChild(li);
-    });
+    }
 }
 
 
