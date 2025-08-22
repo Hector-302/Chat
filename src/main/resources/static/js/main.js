@@ -1,12 +1,14 @@
 'use strict';
 
 var usernamePage = document.querySelector('#username-page');
+var lobbyPage = document.querySelector('#lobby-page');
 var chatPage = document.querySelector('#chat-page');
 var usernameForm = document.querySelector('#usernameForm');
 var messageForm = document.querySelector('#messageForm');
 var messageInput = document.querySelector('#message');
 var messageArea = document.querySelector('#messageArea');
 var connectingElement = document.querySelector('.connecting');
+var userListElement = document.querySelector('#userList');
 
 var stompClient = null;
 var username = null;
@@ -21,7 +23,7 @@ function connect(event) {
 
     if(username) {
         usernamePage.classList.add('hidden');
-        chatPage.classList.remove('hidden');
+        lobbyPage.classList.remove('hidden');
 
         var socket = new SockJS('/ws');
         stompClient = Stomp.over(socket);
@@ -35,6 +37,7 @@ function connect(event) {
 function onConnected() {
     // Subscribe to the Public Topic
     stompClient.subscribe('/topic/public', onMessageReceived);
+    stompClient.subscribe('/topic/users', onUsersReceived);
 
     // Tell your username to the server
     stompClient.send("/app/chat.addUser",
@@ -104,6 +107,20 @@ function onMessageReceived(payload) {
 
     messageArea.appendChild(messageElement);
     messageArea.scrollTop = messageArea.scrollHeight;
+}
+
+function onUsersReceived(payload) {
+    var users = JSON.parse(payload.body);
+    userListElement.innerHTML = '';
+    users.forEach(function(user) {
+        var li = document.createElement('li');
+        li.appendChild(document.createTextNode(user));
+        li.addEventListener('click', function() {
+            lobbyPage.classList.add('hidden');
+            chatPage.classList.remove('hidden');
+        });
+        userListElement.appendChild(li);
+    });
 }
 
 
