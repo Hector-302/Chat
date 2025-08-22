@@ -1,7 +1,7 @@
 package com.example.websocketdemo.controller;
 
 import com.example.websocketdemo.model.ChatMessage;
-import com.example.websocketdemo.service.UserRegistry;
+import com.example.websocketdemo.service.SessionUserRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,7 +22,7 @@ public class WebSocketEventListener {
     private SimpMessagingTemplate messagingTemplate;
 
     @Autowired
-    private UserRegistry userRegistry;
+    private SessionUserRegistry sessionUserRegistry;
 
     @EventListener
     public void handleWebSocketConnectListener(SessionConnectedEvent event) {
@@ -31,8 +31,8 @@ public class WebSocketEventListener {
         String username = headerAccessor.getFirstNativeHeader("username");
 
         if (sessionId != null && username != null) {
-            userRegistry.register(sessionId, username);
-            messagingTemplate.convertAndSend("/topic/users", userRegistry.getAllUsers());
+            sessionUserRegistry.register(sessionId, username);
+            messagingTemplate.convertAndSend("/topic/users", sessionUserRegistry.getAllUsers());
         }
 
         logger.info("Received a new web socket connection");
@@ -41,27 +41,23 @@ public class WebSocketEventListener {
     @EventListener
     public void handleWebSocketDisconnectListener(SessionDisconnectEvent event) {
         StompHeaderAccessor headerAccessor = StompHeaderAccessor.wrap(event.getMessage());
-
         String sessionId = headerAccessor.getSessionId();
-        String username = userRegistry.getUsername(sessionId);
-        if (username == null && headerAccessor.getSessionAttributes() != null) {
-            username = (String) headerAccessor.getSessionAttributes().get("username");
+
+        if (sessionId == null) {
+            return;
         }
 
-        if (sessionId != null) {
-            userRegistry.unregister(sessionId);
-        }
+        String username = sessionUserRegistry.getUsername(sessionId);
+        sessionUserRegistry.unregister(sessionId);
 
         if(username != null) {
-            logger.info("User Disconnected : " + username);
-
+            logger.info("User Disconnected: {}", username);
             ChatMessage chatMessage = new ChatMessage();
             chatMessage.setType(ChatMessage.MessageType.LEAVE);
             chatMessage.setSender(username);
-
             messagingTemplate.convertAndSend("/topic/public", chatMessage);
         }
 
-        messagingTemplate.convertAndSend("/topic/users", userRegistry.getAllUsers());
+        messagingTemplate.convertAndSend("/topic/users", sessionUserRegistry.getAllUsers());
     }
 }

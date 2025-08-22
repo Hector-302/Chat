@@ -7,7 +7,7 @@ import java.util.concurrent.ConcurrentMap;
 import org.springframework.stereotype.Service;
 
 @Service
-public class UserRegistry {
+public class SessionUserRegistry {
 
     private final ConcurrentMap<String, String> sessionIdToUser = new ConcurrentHashMap<>();
 
@@ -30,5 +30,6 @@ public class UserRegistry {
     public Collection<String> getAllUsers() {
         return sessionIdToUser.values();
     }
+
 }
 
