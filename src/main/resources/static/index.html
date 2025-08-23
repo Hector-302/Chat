@@ -24,8 +24,20 @@
         </div>
     </div>
 
+    <div id="lobby-page" class="hidden">
+        <div class="chat-container">
+            <button id="backToLogin" type="button" class="default">Volver</button>
+            <h2>Usuarios conectados</h2>
+            <ul id="connectedUsers"></ul>
+            <h2>Chats abiertos</h2>
+            <ul id="openChats"></ul>
+            <button id="forumButton" type="button" class="primary">Entrar al foro</button>
+        </div>
+    </div>
+
     <div id="chat-page" class="hidden">
         <div class="chat-container">
+            <button id="backToLobby" type="button" class="default">Volver</button>
             <div class="chat-header">
                 <h2>Spring WebSocket Chat Demo</h2>
             </div>
