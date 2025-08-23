@@ -20,6 +20,10 @@ var colors = [
     '#ffc107', '#ff85af', '#FF9800', '#39bbb0'
 ];
 
+/**
+ * Se ejecuta al enviar el formulario de nombre de usuario.
+ * Oculta la página de login y muestra la del lobby.
+ */
 function login(event) {
     username = document.querySelector('#name').value.trim();
 
@@ -30,6 +34,10 @@ function login(event) {
     event.preventDefault();
 }
 
+/**
+ * Se ejecuta al hacer clic en el botón del foro en el lobby.
+ * Oculta el lobby, muestra la página de chat e inicia la conexión WebSocket.
+ */
 function connect(event) {
     lobbyPage.classList.add('hidden');
     chatPage.classList.remove('hidden');
@@ -42,12 +50,20 @@ function connect(event) {
     event.preventDefault();
 }
 
+/**
+ * Se ejecuta al hacer clic en el botón "Volver al Login".
+ * Oculta el lobby y muestra la página de inicio de sesión.
+ */
 function showLogin(event) {
     lobbyPage.classList.add('hidden');
     usernamePage.classList.remove('hidden');
     event.preventDefault();
 }
 
+/**
+ * Se ejecuta al hacer clic en el botón "Volver al Lobby".
+ * Oculta la página de chat, muestra el lobby, se desconecta del WebSocket y limpia el área de mensajes.
+ */
 function showLobby(event) {
     chatPage.classList.add('hidden');
     lobbyPage.classList.remove('hidden');
@@ -60,6 +76,10 @@ function showLobby(event) {
 }
 
 
+/**
+ * Función callback que se ejecuta cuando la conexión con el servidor WebSocket es exitosa.
+ * Se suscribe al topic público y envía un mensaje de 'JOIN' para notificar la entrada del usuario.
+ */
 function onConnected() {
     // Subscribe to the Public Topic
     stompClient.subscribe('/topic/public', onMessageReceived);
@@ -74,12 +94,20 @@ function onConnected() {
 }
 
 
+/**
+ * Función callback que se ejecuta si hay un error en la conexión WebSocket.
+ * Muestra un mensaje de error en la pantalla.
+ */
 function onError(error) {
     connectingElement.textContent = 'Could not connect to WebSocket server. Please refresh this page to try again!';
     connectingElement.style.color = 'red';
 }
 
 
+/**
+ * Se ejecuta al enviar el formulario de mensaje en el chat.
+ * Construye y envía el objeto del mensaje al servidor a través de WebSocket.
+ */
 function sendMessage(event) {
     var messageContent = messageInput.value.trim();
 
@@ -97,6 +125,10 @@ function sendMessage(event) {
 }
 
 
+/**
+ * Función callback que se ejecuta cada vez que se recibe un mensaje del topic público.
+ * Procesa el mensaje y lo añade al área de chat, distinguiendo entre mensajes de unión, salida o chat normal.
+ */
 function onMessageReceived(payload) {
     var message = JSON.parse(payload.body);
 
@@ -135,6 +167,10 @@ function onMessageReceived(payload) {
 }
 
 
+/**
+ * Se ejecuta desde onMessageReceived para obtener un color consistente para el avatar del usuario.
+ * Calcula un hash a partir del nombre de usuario para seleccionar un color del array.
+ */
 function getAvatarColor(messageSender) {
     var hash = 0;
     for (var i = 0; i < messageSender.length; i++) {
