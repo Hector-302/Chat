@@ -296,3 +296,8 @@ button.accent {
         font-size: 1.1em;
     }
 }
+
+#lobby-page ul {
+    list-style-type: none;
+    padding: 0;
+}
