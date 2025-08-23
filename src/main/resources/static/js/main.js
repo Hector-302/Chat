@@ -11,6 +11,7 @@ var messageForm = document.querySelector('#messageForm');
 var messageInput = document.querySelector('#message');
 var messageArea = document.querySelector('#messageArea');
 var connectingElement = document.querySelector('.connecting');
+var connectedUsers = document.querySelector('#connectedUsers');
 
 var stompClient = null;
 var username = null;
@@ -30,6 +31,10 @@ function login(event) {
     if(username) {
         usernamePage.classList.add('hidden');
         lobbyPage.classList.remove('hidden');
+
+        var socket = new SockJS('/ws');
+        stompClient = Stomp.over(socket);
+        stompClient.connect({username: username}, onConnected, onError);
     }
     event.preventDefault();
 }
@@ -41,12 +46,12 @@ function login(event) {
 function connect(event) {
     lobbyPage.classList.add('hidden');
     chatPage.classList.remove('hidden');
-    connectingElement.classList.remove('hidden');
+    connectingElement.classList.add('hidden');
 
-    var socket = new SockJS('/ws');
-    stompClient = Stomp.over(socket);
-
-    stompClient.connect({}, onConnected, onError);
+    if(stompClient) {
+        stompClient.subscribe('/topic/public', onMessageReceived);
+        stompClient.send("/app/chat.addUser", {}, JSON.stringify({sender: username, type: 'JOIN'}));
+    }
     event.preventDefault();
 }
 
@@ -57,6 +62,11 @@ function connect(event) {
 function showLogin(event) {
     lobbyPage.classList.add('hidden');
     usernamePage.classList.remove('hidden');
+    if(stompClient !== null) {
+        stompClient.disconnect();
+        stompClient = null;
+    }
+    connectedUsers.innerHTML = '';
     event.preventDefault();
 }
 
@@ -67,9 +77,9 @@ function showLogin(event) {
 function showLobby(event) {
     chatPage.classList.add('hidden');
     lobbyPage.classList.remove('hidden');
-    if(stompClient !== null) {
-        stompClient.disconnect();
-        stompClient = null;
+    if(stompClient) {
+        var chatMessage = {sender: username, type: 'LEAVE'};
+        stompClient.send("/app/chat.sendMessage", {}, JSON.stringify(chatMessage));
     }
     messageArea.innerHTML = '';
     event.preventDefault();
@@ -78,19 +88,10 @@ function showLobby(event) {
 
 /**
  * Función callback que se ejecuta cuando la conexión con el servidor WebSocket es exitosa.
- * Se suscribe al topic público y envía un mensaje de 'JOIN' para notificar la entrada del usuario.
+ * Se suscribe al topic de usuarios para mantener la lista actualizada.
  */
 function onConnected() {
-    // Subscribe to the Public Topic
-    stompClient.subscribe('/topic/public', onMessageReceived);
-
-    // Tell your username to the server
-    stompClient.send("/app/chat.addUser",
-        {},
-        JSON.stringify({sender: username, type: 'JOIN'})
-    )
-
-    connectingElement.classList.add('hidden');
+    stompClient.subscribe('/topic/users', onUsersReceived);
 }
 
 
@@ -166,6 +167,25 @@ function onMessageReceived(payload) {
     messageArea.scrollTop = messageArea.scrollHeight;
 }
 
+/**
+ * Actualiza la lista de usuarios conectados en el lobby.
+ */
+function onUsersReceived(payload) {
+    var users = JSON.parse(payload.body);
+    connectedUsers.innerHTML = '';
+    if (users.length === 0) {
+        var li = document.createElement('li');
+        li.textContent = 'No hay usuarios conectados';
+        connectedUsers.appendChild(li);
+    } else {
+        users.forEach(function(user) {
+            var li = document.createElement('li');
+            li.textContent = user;
+            connectedUsers.appendChild(li);
+        });
+    }
+}
+
 
 /**
  * Se ejecuta desde onMessageReceived para obtener un color consistente para el avatar del usuario.
@@ -185,4 +205,4 @@ usernameForm.addEventListener('submit', login, true)
 forumButton.addEventListener('click', connect, true)
 backToLoginButton.addEventListener('click', showLogin, true)
 backToLobbyButton.addEventListener('click', showLobby, true)
-messageForm.addEventListener('submit', sendMessage, true)
+messageForm.addEventListener('submit', sendMessage, true);
