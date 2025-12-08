@@ -176,11 +176,11 @@ function restoreStateAfterLogin() {
 
     renderOpenChats();
 
-    if (activeConversationId && conversations[activeConversationId]) {
-        setActiveConversation(activeConversationId);
-    }
-
     refreshUserUnreadBadges();
+
+    // Vuelve siempre a la vista de lista después de restaurar el estado
+    // para evitar mostrar de inmediato la última conversación abierta.
+    showChatListView();
 }
 
 function login(event) {
@@ -289,7 +289,9 @@ function resetPrivateChats() {
 function onUsersReceived(payload) {
     var users = JSON.parse(payload.body);
     latestUsers = users || [];
-    knownUsers = latestUsers.map(function(user) { return user.username; });
+    knownUsers = latestUsers
+        .filter(function(user) { return user.username !== username; })
+        .map(function(user) { return user.username; });
     renderConnectedUsers();
 }
 
@@ -309,7 +311,8 @@ function renderConnectedUsers() {
     });
 
     var filteredUsers = sortedUsers.filter(function(user) {
-        return !searchTerm || user.username.toLowerCase().indexOf(searchTerm) !== -1;
+        var matchesSearch = !searchTerm || user.username.toLowerCase().indexOf(searchTerm) !== -1;
+        return matchesSearch && user.username !== username && !userHasConversation(user.username);
     });
 
     if (filteredUsers.length === 0) {
@@ -681,6 +684,13 @@ function appendMessageIfNew(conversationId, message) {
         return true;
     }
     return false;
+}
+
+function userHasConversation(targetUser) {
+    return Object.keys(conversations).some(function(id) {
+        var conversation = conversations[id];
+        return conversation && conversation.target === targetUser;
+    });
 }
 
 function formatTimestamp(timestamp) {
