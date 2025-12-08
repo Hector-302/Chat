@@ -455,6 +455,27 @@ button.accent {
     background: #c1c1c1;
 }
 
+#lobby-page .search-wrapper {
+    width: 100%;
+}
+
+.search-input {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1px solid #d6d9de;
+    border-radius: 12px;
+    font-size: 15px;
+    outline: none;
+    background: #f8fafc;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.search-input:focus {
+    border-color: #128ff2;
+    box-shadow: 0 0 0 3px rgba(18, 143, 242, 0.15);
+    background: #ffffff;
+}
+
 #lobby-page #connectedUsers .user-name {
     flex: 1;
     font-weight: 600;

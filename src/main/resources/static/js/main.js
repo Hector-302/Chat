@@ -15,6 +15,7 @@ var messageArea = document.querySelector('#messageArea');
 var connectingElement = document.querySelector('.connecting');
 var connectionStatusBanner = document.querySelector('#connectionStatus');
 var connectedUsers = document.querySelector('#connectedUsers');
+var connectedUsersSearch = document.querySelector('#connectedUsersSearch');
 var openChats = document.querySelector('#openChats');
 var privateChatPanel = document.querySelector('#private-chat-panel');
 var privateMessageArea = document.querySelector('#privateMessageArea');
@@ -30,6 +31,7 @@ var stompClient = null;
 var username = null;
 var publicChatSubscription = null;
 var knownUsers = [];
+var latestUsers = [];
 
 var conversations = {};
 var activeConversationId = null;
@@ -256,64 +258,78 @@ function resetPrivateChats() {
 
 function onUsersReceived(payload) {
     var users = JSON.parse(payload.body);
-    knownUsers = (users || []).map(function(user) { return user.username; });
+    latestUsers = users || [];
+    knownUsers = latestUsers.map(function(user) { return user.username; });
+    renderConnectedUsers();
+}
+
+function renderConnectedUsers() {
+    if (!connectedUsers) {
+        return;
+    }
+
+    var searchTerm = connectedUsersSearch ? connectedUsersSearch.value.trim().toLowerCase() : '';
     connectedUsers.innerHTML = '';
 
-    if (!users || users.length === 0) {
-        var li = document.createElement('li');
-        li.textContent = 'No hay usuarios conectados';
-        connectedUsers.appendChild(li);
-    } else {
-        users
-            .slice()
-            .sort(function(a, b) {
-                if (a.online === b.online) {
-                    return a.username.localeCompare(b.username);
-                }
-                return a.online ? -1 : 1;
-            })
-            .forEach(function(user) {
-                var li = document.createElement('li');
-                li.classList.add('user-row');
-                li.dataset.username = user.username;
+    var sortedUsers = latestUsers.slice().sort(function(a, b) {
+        if (a.online === b.online) {
+            return a.username.localeCompare(b.username);
+        }
+        return a.online ? -1 : 1;
+    });
 
-                var statusIndicator = document.createElement('span');
-                statusIndicator.classList.add('user-status');
-                statusIndicator.classList.add(user.online ? 'online' : 'offline');
-                statusIndicator.title = user.online ? 'En línea' : 'Desconectado';
+    var filteredUsers = sortedUsers.filter(function(user) {
+        return !searchTerm || user.username.toLowerCase().indexOf(searchTerm) !== -1;
+    });
 
-                var nameElement = document.createElement('span');
-                nameElement.classList.add('user-name');
-                nameElement.textContent = user.username;
-
-                var stateLabel = document.createElement('span');
-                stateLabel.classList.add('user-state-label');
-                stateLabel.classList.add(user.online ? 'online' : 'offline');
-                stateLabel.textContent = user.online ? 'En línea' : 'Desconectado';
-
-                var unread = getUnreadCountForUser(user.username);
-                var unreadBadge = null;
-                if (unread > 0) {
-                    unreadBadge = document.createElement('span');
-                    unreadBadge.classList.add('unread-badge');
-                    unreadBadge.textContent = unread;
-                }
-
-                if (user.online && user.username !== username) {
-                    li.addEventListener('click', function() {
-                        startPrivateConversation(user.username);
-                    });
-                }
-
-                li.appendChild(statusIndicator);
-                li.appendChild(nameElement);
-                li.appendChild(stateLabel);
-                if (unreadBadge) {
-                    li.appendChild(unreadBadge);
-                }
-                connectedUsers.appendChild(li);
-            });
+    if (filteredUsers.length === 0) {
+        var emptyLi = document.createElement('li');
+        emptyLi.textContent = searchTerm ? 'No hay usuarios que coincidan' : 'No hay usuarios conectados';
+        connectedUsers.appendChild(emptyLi);
+        return;
     }
+
+    filteredUsers.forEach(function(user) {
+        var li = document.createElement('li');
+        li.classList.add('user-row');
+        li.dataset.username = user.username;
+
+        var statusIndicator = document.createElement('span');
+        statusIndicator.classList.add('user-status');
+        statusIndicator.classList.add(user.online ? 'online' : 'offline');
+        statusIndicator.title = user.online ? 'En línea' : 'Desconectado';
+
+        var nameElement = document.createElement('span');
+        nameElement.classList.add('user-name');
+        nameElement.textContent = user.username;
+
+        var stateLabel = document.createElement('span');
+        stateLabel.classList.add('user-state-label');
+        stateLabel.classList.add(user.online ? 'online' : 'offline');
+        stateLabel.textContent = user.online ? 'En línea' : 'Desconectado';
+
+        var unread = getUnreadCountForUser(user.username);
+        var unreadBadge = null;
+        if (unread > 0) {
+            unreadBadge = document.createElement('span');
+            unreadBadge.classList.add('unread-badge');
+            unreadBadge.textContent = unread;
+        }
+
+        if (user.online && user.username !== username) {
+            li.addEventListener('click', function() {
+                startPrivateConversation(user.username);
+            });
+        }
+
+        li.appendChild(statusIndicator);
+        li.appendChild(nameElement);
+        li.appendChild(stateLabel);
+        if (unreadBadge) {
+            li.appendChild(unreadBadge);
+        }
+        connectedUsers.appendChild(li);
+    });
 }
 
 function onError(error) {
@@ -660,3 +676,7 @@ navButtons.forEach(function(button) {
         showSection(button.dataset.target);
     });
 });
+
+if (connectedUsersSearch) {
+    connectedUsersSearch.addEventListener('input', renderConnectedUsers);
+}
