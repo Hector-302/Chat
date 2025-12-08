@@ -254,6 +254,15 @@ button.accent {
     height: 100%;
 }
 
+#chat-page:not(.conversation-active) #chat-conversation-card {
+    display: none;
+}
+
+#chat-page.conversation-active #chat-list-card,
+#chat-page.conversation-active #noPrivateChat {
+    display: none;
+}
+
 #chat-page .section-scroll {
     display: flex;
     flex-direction: column;

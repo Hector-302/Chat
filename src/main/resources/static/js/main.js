@@ -140,6 +140,13 @@ function showSection(sectionId) {
     updateTitle(sectionId);
 }
 
+function toggleConversationLayout(isConversationActive) {
+    if (!chatPage) {
+        return;
+    }
+    chatPage.classList.toggle('conversation-active', !!isConversationActive);
+}
+
 function showChatListView() {
     if (chatListCard) {
         chatListCard.classList.remove('hidden');
@@ -147,6 +154,7 @@ function showChatListView() {
     if (chatConversationCard) {
         chatConversationCard.classList.add('hidden');
     }
+    toggleConversationLayout(false);
 }
 
 function showChatConversationView() {
@@ -156,6 +164,7 @@ function showChatConversationView() {
     if (chatConversationCard) {
         chatConversationCard.classList.remove('hidden');
     }
+    toggleConversationLayout(true);
 }
 
 function restoreStateAfterLogin() {
@@ -284,6 +293,7 @@ function resetPrivateChats() {
     privateMessageArea.innerHTML = '';
     showChatListView();
     noPrivateChat.classList.remove('hidden');
+    renderConnectedUsers();
 }
 
 function onUsersReceived(payload) {
@@ -397,6 +407,7 @@ function startPrivateConversation(targetUser) {
     var conversationId = buildConversationId(username, targetUser);
 
     ensureConversation(conversationId, targetUser);
+    renderConnectedUsers();
 
     subscribeToConversation(conversationId, targetUser);
     showSection('chat-page');
@@ -574,12 +585,16 @@ function onPrivateMessageReceived(payload) {
     var conversationId = message.conversationId || buildConversationId(message.sender, message.target);
 
     var targetUser = message.sender === username ? message.target : message.sender;
+    var conversationExisted = Boolean(conversations[conversationId]);
     if (message.type === 'PRIVATE_ERROR') {
         renderSystemPrivateMessage(message);
         return;
     }
 
     ensureConversation(conversationId, targetUser);
+    if (!conversationExisted) {
+        renderConnectedUsers();
+    }
     if (!activeConversationId) {
         activeConversationId = conversationId;
     }
