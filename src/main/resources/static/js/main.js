@@ -11,6 +11,7 @@ var messageForm = document.querySelector('#messageForm');
 var messageInput = document.querySelector('#message');
 var messageArea = document.querySelector('#messageArea');
 var connectingElement = document.querySelector('.connecting');
+var connectionStatusBanner = document.querySelector('#connectionStatus');
 var connectedUsers = document.querySelector('#connectedUsers');
 var openChats = document.querySelector('#openChats');
 var privateChatPanel = document.querySelector('#private-chat-panel');
@@ -25,6 +26,7 @@ var STORAGE_KEY = 'chat-state';
 var stompClient = null;
 var username = null;
 var publicChatSubscription = null;
+var knownUsers = [];
 
 var conversations = {};
 var activeConversationId = null;
@@ -74,6 +76,29 @@ function persistState() {
     }
 }
 
+function showConnectionStatus(message, type) {
+    if (!connectionStatusBanner) {
+        return;
+    }
+
+    connectionStatusBanner.textContent = message;
+    connectionStatusBanner.classList.remove('hidden', 'status-success', 'status-error', 'status-info', 'status-warning');
+    if (type) {
+        connectionStatusBanner.classList.add('status-' + type);
+    }
+}
+
+function setConnectingFeedback(message, type) {
+    if (!connectingElement) {
+        return;
+    }
+    connectingElement.textContent = message;
+    connectingElement.classList.remove('status-success', 'status-error', 'status-info', 'status-warning');
+    if (type) {
+        connectingElement.classList.add('status-' + type);
+    }
+}
+
 function restoreStateAfterLogin() {
     var state = loadSavedState();
     if (!state || state.username !== username) {
@@ -106,6 +131,8 @@ function login(event) {
         usernamePage.classList.add('hidden');
         lobbyPage.classList.remove('hidden');
 
+        showConnectionStatus('Conectando...', 'info');
+
         connectedUsers.innerHTML = '';
         var li = document.createElement('li');
         li.textContent = 'Conectando...';
@@ -122,11 +149,17 @@ function onConnected() {
     stompClient.subscribe('/topic/users', onUsersReceived);
     stompClient.subscribe('/topic/private.inbox.' + username, onPrivateMessageReceived);
 
+    if (stompClient && stompClient.ws) {
+        stompClient.ws.onclose = onSocketClosed;
+    }
+
     stompClient.send("/app/chat.register",
         {},
         JSON.stringify({sender: username, type: 'JOIN'})
     );
 
+    showConnectionStatus('Conectado como ' + username, 'success');
+    setConnectingFeedback('Conectado', 'success');
     restoreStateAfterLogin();
 }
 
@@ -153,6 +186,7 @@ function showLogin(event) {
         stompClient.disconnect();
         stompClient = null;
     }
+    showConnectionStatus('Desconectado', 'warning');
     connectedUsers.innerHTML = '';
     event.preventDefault();
 }
@@ -180,6 +214,7 @@ function resetPrivateChats() {
 
 function onUsersReceived(payload) {
     var users = JSON.parse(payload.body);
+    knownUsers = (users || []).map(function(user) { return user.username; });
     connectedUsers.innerHTML = '';
 
     if (!users || users.length === 0) {
@@ -241,8 +276,13 @@ function onUsersReceived(payload) {
 
 function onError(error) {
     console.error(error);
-    connectingElement.textContent = 'No se pudo conectar al servidor WebSocket. Por favor, refresca la página.';
-    connectingElement.style.color = 'red';
+    setConnectingFeedback('No se pudo conectar al servidor WebSocket. Por favor, refresca la página.', 'error');
+    showConnectionStatus('Error al conectar con el servidor.', 'error');
+}
+
+function onSocketClosed() {
+    setConnectingFeedback('Desconectado del servidor', 'warning');
+    showConnectionStatus('Sesión desconectada. Reintenta conectar.', 'warning');
 }
 
 function sendMessage(event) {
@@ -260,6 +300,9 @@ function sendMessage(event) {
 }
 
 function startPrivateConversation(targetUser) {
+    if (!isValidRecipient(targetUser)) {
+        return;
+    }
     var conversationId = buildConversationId(username, targetUser);
 
     ensureConversation(conversationId, targetUser);
@@ -365,6 +408,18 @@ function renderConversationMessages(conversationId) {
     privateMessageArea.scrollTop = privateMessageArea.scrollHeight;
 }
 
+function renderSystemPrivateMessage(message) {
+    privateMessageArea.innerHTML = '';
+    var row = document.createElement('div');
+    row.classList.add('message-row', 'system-row');
+    var text = document.createElement('span');
+    text.textContent = message.content;
+    row.appendChild(text);
+    privateMessageArea.appendChild(row);
+    setConnectingFeedback(message.content, 'error');
+    showConnectionStatus(message.content, 'error');
+}
+
 function onMessageReceived(payload) {
     var message = JSON.parse(payload.body);
     var messageElement = document.createElement('li');
@@ -404,6 +459,11 @@ function onPrivateMessageReceived(payload) {
     var conversationId = message.conversationId || buildConversationId(message.sender, message.target);
 
     var targetUser = message.sender === username ? message.target : message.sender;
+    if (message.type === 'PRIVATE_ERROR') {
+        renderSystemPrivateMessage(message);
+        return;
+    }
+
     ensureConversation(conversationId, targetUser);
     if (!activeConversationId) {
         activeConversationId = conversationId;
@@ -437,6 +497,10 @@ function sendPrivateMessage(event) {
     }
 
     var conversation = conversations[activeConversationId];
+    if (!isValidRecipient(conversation.target)) {
+        event.preventDefault();
+        return;
+    }
     var chatMessage = {
         sender: username,
         content: messageContent,
@@ -448,6 +512,18 @@ function sendPrivateMessage(event) {
     stompClient.send('/app/chat.private.' + activeConversationId, {}, JSON.stringify(chatMessage));
     privateMessageInput.value = '';
     event.preventDefault();
+}
+
+function isValidRecipient(targetUser) {
+    if (!targetUser || targetUser === username) {
+        showConnectionStatus('Debes seleccionar a otro usuario para conversar.', 'error');
+        return false;
+    }
+    if (knownUsers.indexOf(targetUser) === -1) {
+        showConnectionStatus('El usuario seleccionado no existe o no está disponible.', 'error');
+        return false;
+    }
+    return true;
 }
 
 function getAvatarColor(messageSender) {

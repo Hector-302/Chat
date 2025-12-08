@@ -250,6 +250,33 @@ button.accent {
     width: 100%;
 }
 
+.status-banner {
+    max-width: 700px;
+    margin: 12px auto 0 auto;
+    padding: 10px 14px;
+    text-align: center;
+    border-radius: 4px;
+    background: #f1f7ff;
+    color: #0e6fc2;
+    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.08);
+}
+
+.status-success {
+    color: #2c9c5d !important;
+}
+
+.status-error {
+    color: #ff4743 !important;
+}
+
+.status-warning {
+    color: #c17700 !important;
+}
+
+.status-info {
+    color: #0e6fc2 !important;
+}
+
 
 @media screen and (max-width: 730px) {
 
@@ -441,6 +468,11 @@ button.accent {
     margin-right: 6px;
 }
 
+.private-messages .message-row.system-row {
+    color: #ff4743;
+    font-weight: 600;
+}
+
 .private-empty {
     text-align: center;
     padding: 30px 15px;
@@ -453,6 +485,17 @@ button.accent {
 
 #connectedUsers .user-row:hover {
     background: #f8fbff;
+}
+
+#lobby-page .chat-container {
+    padding: 15px 18px;
+    border-radius: 6px;
+}
+
+#lobby-page h2 {
+    margin-top: 10px;
+    border-bottom: 1px solid #ececec;
+    padding-bottom: 8px;
 }
 
 #privateMessageForm {
