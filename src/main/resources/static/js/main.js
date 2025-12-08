@@ -330,7 +330,7 @@ function renderConnectedUsers() {
         var statusIndicator = document.createElement('span');
         statusIndicator.classList.add('user-status');
         statusIndicator.classList.add(user.online ? 'online' : 'offline');
-        statusIndicator.title = user.online ? 'En línea' : 'Desconectado';
+        statusIndicator.title = user.online ? 'En linea' : 'Desconectado';
 
         var nameElement = document.createElement('span');
         nameElement.classList.add('user-name');
@@ -339,7 +339,7 @@ function renderConnectedUsers() {
         var stateLabel = document.createElement('span');
         stateLabel.classList.add('user-state-label');
         stateLabel.classList.add(user.online ? 'online' : 'offline');
-        stateLabel.textContent = user.online ? 'En línea' : 'Desconectado';
+        stateLabel.textContent = user.online ? 'En linea' : 'Desconectado';
 
         var unread = getUnreadCountForUser(user.username);
         var unreadBadge = null;
@@ -367,13 +367,13 @@ function renderConnectedUsers() {
 
 function onError(error) {
     console.error(error);
-    setConnectingFeedback('No se pudo conectar al servidor WebSocket. Por favor, refresca la página.', 'error');
+    setConnectingFeedback('No se pudo conectar al servidor WebSocket. Por favor, refresca la pagina.', 'error');
     showConnectionStatus('Error al conectar con el servidor.', 'error');
 }
 
 function onSocketClosed() {
     setConnectingFeedback('Desconectado del servidor', 'warning');
-    showConnectionStatus('Sesión desconectada. Reintenta conectar.', 'warning');
+    showConnectionStatus('Sesion desconectada. Reintenta conectar.', 'warning');
 }
 
 function sendMessage(event) {
@@ -635,7 +635,7 @@ function isValidRecipient(targetUser) {
         return false;
     }
     if (knownUsers.indexOf(targetUser) === -1) {
-        showConnectionStatus('El usuario seleccionado no existe o no está disponible.', 'error');
+        showConnectionStatus('El usuario seleccionado no existe o no esta disponible.', 'error');
         return false;
     }
     return true;
