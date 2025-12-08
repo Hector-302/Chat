@@ -2,15 +2,18 @@ package com.example.websocketdemo.model;
 
 
 public class ChatMessage {
-    private MessageType type;
-    private String content;
-    private String sender;
-
     public enum MessageType {
         CHAT,
         JOIN,
-        LEAVE
+        LEAVE,
+        PRIVATE
     }
+
+    private MessageType type;
+    private String content;
+    private String sender;
+    private String target;
+    private String conversationId;
 
     public MessageType getType() {
         return type;
@@ -34,5 +37,21 @@ public class ChatMessage {
 
     public void setSender(String sender) {
         this.sender = sender;
+    }
+
+    public String getTarget() {
+        return target;
+    }
+
+    public void setTarget(String target) {
+        this.target = target;
+    }
+
+    public String getConversationId() {
+        return conversationId;
+    }
+
+    public void setConversationId(String conversationId) {
+        this.conversationId = conversationId;
     }
 }

@@ -341,3 +341,106 @@ button.accent {
 #lobby-page #connectedUsers .user-state-label.online {
     color: #2c9c5d;
 }
+
+.lobby-layout {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 20px;
+    padding: 10px;
+}
+
+.lobby-button {
+    width: 100%;
+    margin-top: 15px;
+}
+
+.private-container {
+    display: flex;
+    flex-direction: column;
+}
+
+.private-panel-header {
+    padding: 16px 20px 0 20px;
+}
+
+.private-helper {
+    margin: 0;
+    color: #777;
+    font-size: 14px;
+}
+
+#openChats {
+    list-style: none;
+    padding: 0 20px 10px 20px;
+    margin: 0;
+}
+
+#openChats li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid #f1f1f1;
+}
+
+#openChats li button {
+    flex: 1;
+    text-align: left;
+    background: transparent;
+    color: #128ff2;
+    border: none;
+    padding-left: 0;
+    box-shadow: none;
+}
+
+#openChats li button.active-chat {
+    font-weight: 700;
+    color: #0e6fc2;
+}
+
+#openChats .chat-meta {
+    color: #999;
+    font-size: 12px;
+    margin-left: 8px;
+}
+
+#private-chat-panel {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
+
+.private-messages {
+    padding: 10px 20px;
+    overflow-y: auto;
+    height: 220px;
+    border-top: 1px solid #ececec;
+    border-bottom: 1px solid #ececec;
+}
+
+.private-messages .message-row {
+    margin-bottom: 10px;
+}
+
+.private-messages .message-row .sender {
+    font-weight: 700;
+    margin-right: 6px;
+}
+
+.private-empty {
+    text-align: center;
+    padding: 30px 15px;
+    color: #777;
+}
+
+#connectedUsers .user-row {
+    cursor: pointer;
+}
+
+#connectedUsers .user-row:hover {
+    background: #f8fbff;
+}
+
+#privateMessageForm {
+    padding: 10px 20px 20px 20px;
+}

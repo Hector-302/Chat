@@ -12,20 +12,26 @@ var messageInput = document.querySelector('#message');
 var messageArea = document.querySelector('#messageArea');
 var connectingElement = document.querySelector('.connecting');
 var connectedUsers = document.querySelector('#connectedUsers');
+var openChats = document.querySelector('#openChats');
+var privateChatPanel = document.querySelector('#private-chat-panel');
+var privateMessageArea = document.querySelector('#privateMessageArea');
+var privateMessageForm = document.querySelector('#privateMessageForm');
+var privateMessageInput = document.querySelector('#privateMessage');
+var privateChatHeading = document.querySelector('#privateChatHeading');
+var noPrivateChat = document.querySelector('#noPrivateChat');
 
 var stompClient = null;
 var username = null;
-var publicChatSubscription = null; // Para gestionar la suscripción al chat
+var publicChatSubscription = null;
+
+var conversations = {};
+var activeConversationId = null;
 
 var colors = [
     '#2196F3', '#32c787', '#00BCD4', '#ff5652',
     '#ffc107', '#ff85af', '#FF9800', '#39bbb0'
 ];
 
-/**
- * Se ejecuta al enviar el formulario de nombre de usuario.
- * Inicia la conexión WebSocket.
- */
 function login(event) {
     username = document.querySelector('#name').value.trim();
 
@@ -33,7 +39,6 @@ function login(event) {
         usernamePage.classList.add('hidden');
         lobbyPage.classList.remove('hidden');
 
-        // Muestra un mensaje temporal de conexión en la lista de usuarios
         connectedUsers.innerHTML = '';
         var li = document.createElement('li');
         li.textContent = 'Conectando...';
@@ -46,34 +51,22 @@ function login(event) {
     event.preventDefault();
 }
 
-/**
- * Callback que se ejecuta cuando la conexión es exitosa.
- * Se suscribe a los tópicos y se registra en el servidor.
- */
 function onConnected() {
-    // 1. Suscribirse al tópico de la lista de usuarios.
     stompClient.subscribe('/topic/users', onUsersReceived);
+    stompClient.subscribe('/topic/private.inbox.' + username, onPrivateMessageReceived);
 
-    // 2. Enviar mensaje de registro al servidor. Esto hará que el servidor
-    // nos envíe la lista de usuarios completa.
     stompClient.send("/app/chat.register",
         {},
         JSON.stringify({sender: username, type: 'JOIN'})
     );
 }
 
-/**
- * Se ejecuta al hacer clic en "Entrar al foro".
- * Muestra la página de chat y se suscribe al chat público.
- */
 function connect(event) {
     lobbyPage.classList.add('hidden');
     chatPage.classList.remove('hidden');
 
-    // Suscribirse al chat público SÓLO al entrar a la sala
     publicChatSubscription = stompClient.subscribe('/topic/public', onMessageReceived);
 
-    // Enviar un mensaje de JOIN para que los demás en el chat lo vean
     stompClient.send("/app/chat.addUser",
         {},
         JSON.stringify({sender: username, type: 'JOIN'})
@@ -81,13 +74,11 @@ function connect(event) {
     event.preventDefault();
 }
 
-/**
- * Se ejecuta al hacer clic en "Volver al Login" desde el lobby.
- * Se desconecta completamente.
- */
 function showLogin(event) {
     lobbyPage.classList.add('hidden');
     usernamePage.classList.remove('hidden');
+
+    resetPrivateChats();
 
     if (stompClient !== null) {
         stompClient.disconnect();
@@ -97,15 +88,10 @@ function showLogin(event) {
     event.preventDefault();
 }
 
-/**
- * Se ejecuta al hacer clic en "Volver al Lobby" desde el chat.
- * Deja la sala de chat pero mantiene la conexión.
- */
 function showLobby(event) {
     chatPage.classList.add('hidden');
     lobbyPage.classList.remove('hidden');
 
-    // Anular la suscripción al chat público para no recibir más mensajes
     if (publicChatSubscription) {
         publicChatSubscription.unsubscribe();
         publicChatSubscription = null;
@@ -114,13 +100,18 @@ function showLobby(event) {
     event.preventDefault();
 }
 
-/**
- * Callback que se ejecuta al recibir la lista de usuarios.
- * Actualiza la UI del lobby.
- */
+function resetPrivateChats() {
+    conversations = {};
+    activeConversationId = null;
+    openChats.innerHTML = '';
+    privateMessageArea.innerHTML = '';
+    privateChatPanel.classList.add('hidden');
+    noPrivateChat.classList.remove('hidden');
+}
+
 function onUsersReceived(payload) {
     var users = JSON.parse(payload.body);
-    connectedUsers.innerHTML = ''; // Limpia el mensaje "Conectando..." o la lista anterior
+    connectedUsers.innerHTML = '';
 
     if (!users || users.length === 0) {
         var li = document.createElement('li');
@@ -153,6 +144,12 @@ function onUsersReceived(payload) {
                 stateLabel.classList.add(user.online ? 'online' : 'offline');
                 stateLabel.textContent = user.online ? 'En línea' : 'Desconectado';
 
+                if (user.online && user.username !== username) {
+                    li.addEventListener('click', function() {
+                        startPrivateConversation(user.username);
+                    });
+                }
+
                 li.appendChild(statusIndicator);
                 li.appendChild(nameElement);
                 li.appendChild(stateLabel);
@@ -161,19 +158,12 @@ function onUsersReceived(payload) {
     }
 }
 
-
-/**
- * Función callback que se ejecuta si hay un error en la conexión WebSocket.
- */
 function onError(error) {
     console.error(error);
     connectingElement.textContent = 'No se pudo conectar al servidor WebSocket. Por favor, refresca la página.';
     connectingElement.style.color = 'red';
 }
 
-/**
- * Se ejecuta al enviar un mensaje de chat.
- */
 function sendMessage(event) {
     var messageContent = messageInput.value.trim();
     if(messageContent && stompClient) {
@@ -188,12 +178,87 @@ function sendMessage(event) {
     event.preventDefault();
 }
 
-/**
- * Callback que se ejecuta al recibir un mensaje en el chat público.
- */
+function startPrivateConversation(targetUser) {
+    var conversationId = buildConversationId(username, targetUser);
+    if (!conversations[conversationId]) {
+        conversations[conversationId] = { target: targetUser, messages: [] };
+    }
+    setActiveConversation(conversationId);
+    renderOpenChats();
+}
 
+function buildConversationId(userA, userB) {
+    return [userA, userB].sort().join('-');
+}
 
- 
+function setActiveConversation(conversationId) {
+    activeConversationId = conversationId;
+    var conversation = conversations[conversationId];
+    if (!conversation) {
+        return;
+    }
+
+    privateChatPanel.classList.remove('hidden');
+    noPrivateChat.classList.add('hidden');
+    privateChatHeading.textContent = 'Chat con ' + conversation.target;
+    renderConversationMessages(conversationId);
+    renderOpenChats();
+}
+
+function renderOpenChats() {
+    openChats.innerHTML = '';
+    Object.keys(conversations).forEach(function(id) {
+        var conversation = conversations[id];
+        var li = document.createElement('li');
+        var button = document.createElement('button');
+        button.textContent = 'Chat con ' + conversation.target;
+        if (id === activeConversationId) {
+            button.classList.add('active-chat');
+        }
+        button.addEventListener('click', function() {
+            setActiveConversation(id);
+        });
+        li.appendChild(button);
+
+        var meta = document.createElement('span');
+        meta.classList.add('chat-meta');
+        meta.textContent = conversation.messages.length + ' msgs';
+        li.appendChild(meta);
+
+        openChats.appendChild(li);
+    });
+
+    if (Object.keys(conversations).length === 0) {
+        noPrivateChat.classList.remove('hidden');
+        privateChatPanel.classList.add('hidden');
+    }
+}
+
+function renderConversationMessages(conversationId) {
+    var conversation = conversations[conversationId];
+    if (!conversation) {
+        return;
+    }
+
+    privateMessageArea.innerHTML = '';
+    conversation.messages.forEach(function(msg) {
+        var row = document.createElement('div');
+        row.classList.add('message-row');
+
+        var senderSpan = document.createElement('span');
+        senderSpan.classList.add('sender');
+        senderSpan.textContent = msg.sender + ':';
+        row.appendChild(senderSpan);
+
+        var text = document.createElement('span');
+        text.textContent = msg.content;
+        row.appendChild(text);
+
+        privateMessageArea.appendChild(row);
+    });
+    privateMessageArea.scrollTop = privateMessageArea.scrollHeight;
+}
+
 function onMessageReceived(payload) {
     var message = JSON.parse(payload.body);
     var messageElement = document.createElement('li');
@@ -228,9 +293,55 @@ function onMessageReceived(payload) {
     messageArea.scrollTop = messageArea.scrollHeight;
 }
 
-/**
- * Obtiene un color para el avatar del usuario.
- */
+function onPrivateMessageReceived(payload) {
+    var message = JSON.parse(payload.body);
+    var conversationId = message.conversationId || buildConversationId(message.sender, message.target);
+
+    if (!conversations[conversationId]) {
+        var targetUser = message.sender === username ? message.target : message.sender;
+        conversations[conversationId] = { target: targetUser, messages: [] };
+        if (!activeConversationId) {
+            activeConversationId = conversationId;
+        }
+    }
+
+    conversations[conversationId].messages.push({
+        sender: message.sender,
+        content: message.content
+    });
+
+    if (conversationId === activeConversationId) {
+        renderConversationMessages(conversationId);
+    }
+
+    if (activeConversationId === conversationId) {
+        setActiveConversation(conversationId);
+    }
+
+    renderOpenChats();
+}
+
+function sendPrivateMessage(event) {
+    var messageContent = privateMessageInput.value.trim();
+    if (!messageContent || !stompClient || !activeConversationId) {
+        event.preventDefault();
+        return;
+    }
+
+    var conversation = conversations[activeConversationId];
+    var chatMessage = {
+        sender: username,
+        content: messageContent,
+        target: conversation.target,
+        type: 'PRIVATE',
+        conversationId: activeConversationId
+    };
+
+    stompClient.send('/app/chat.private.' + activeConversationId, {}, JSON.stringify(chatMessage));
+    privateMessageInput.value = '';
+    event.preventDefault();
+}
+
 function getAvatarColor(messageSender) {
     var hash = 0;
     for (var i = 0; i < messageSender.length; i++) {
@@ -240,9 +351,9 @@ function getAvatarColor(messageSender) {
     return colors[index];
 }
 
-// Asignación de eventos a los botones
-usernameForm.addEventListener('submit', login, true)
-forumButton.addEventListener('click', connect, true)
-backToLoginButton.addEventListener('click', showLogin, true)
-backToLobbyButton.addEventListener('click', showLobby, true)
+usernameForm.addEventListener('submit', login, true);
+forumButton.addEventListener('click', connect, true);
+backToLoginButton.addEventListener('click', showLogin, true);
+backToLobbyButton.addEventListener('click', showLobby, true);
 messageForm.addEventListener('submit', sendMessage, true);
+privateMessageForm.addEventListener('submit', sendPrivateMessage, true);

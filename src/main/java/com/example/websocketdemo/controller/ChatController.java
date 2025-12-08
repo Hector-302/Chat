@@ -4,12 +4,15 @@ import com.example.websocketdemo.model.ChatMessage;
 import com.example.websocketdemo.service.SessionUserRegistry;
 import com.example.websocketdemo.service.UserPresenceService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
-import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
+
+import java.util.Arrays;
+import java.util.stream.Collectors;
 
 @Controller
 public class ChatController {
@@ -48,14 +51,38 @@ public class ChatController {
      * Simplemente retransmite el mensaje de JOIN al chat público.
      */
     @MessageMapping("/chat.addUser")
-    @SendTo("/topic/public")
-    public ChatMessage addUser(@Payload ChatMessage chatMessage) {
-        return chatMessage;
+    public void addUser(@Payload ChatMessage chatMessage, SimpMessageHeaderAccessor headerAccessor) {
+        headerAccessor.getSessionAttributes().put("username", chatMessage.getSender());
+        chatMessage.setType(ChatMessage.MessageType.JOIN);
+        messagingTemplate.convertAndSend("/topic/public", chatMessage);
     }
 
     @MessageMapping("/chat.sendMessage")
-    @SendTo("/topic/public")
-    public ChatMessage sendMessage(@Payload ChatMessage chatMessage) {
-        return chatMessage;
+    public void sendMessage(@Payload ChatMessage chatMessage) {
+        chatMessage.setType(ChatMessage.MessageType.CHAT);
+        messagingTemplate.convertAndSend("/topic/public", chatMessage);
+    }
+
+    @MessageMapping("/chat.private.{conversationId}")
+    public void sendPrivate(@DestinationVariable String conversationId, @Payload ChatMessage chatMessage) {
+        String normalizedId = buildConversationId(chatMessage.getSender(), chatMessage.getTarget());
+        if (!normalizedId.isBlank()) {
+            conversationId = normalizedId;
+        }
+        chatMessage.setConversationId(conversationId);
+        chatMessage.setType(ChatMessage.MessageType.PRIVATE);
+        messagingTemplate.convertAndSend("/topic/private." + conversationId, chatMessage);
+        messagingTemplate.convertAndSend("/topic/private.inbox." + chatMessage.getTarget(), chatMessage);
+        messagingTemplate.convertAndSend("/topic/private.inbox." + chatMessage.getSender(), chatMessage);
+    }
+
+    private String buildConversationId(String sender, String target) {
+        if (sender == null || target == null) {
+            return "";
+        }
+        return Arrays.asList(sender, target)
+                .stream()
+                .sorted()
+                .collect(Collectors.joining("-"));
     }
 }
