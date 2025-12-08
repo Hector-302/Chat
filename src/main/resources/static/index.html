@@ -44,48 +44,35 @@
                             </div>
                         </div>
                         <ul id="connectedUsers" class="card-list"></ul>
-                        <button id="forumButton" type="button" class="primary lobby-button">Entrar al foro</button>
-                    </div>
-                    <div class="card">
-                        <div class="card-header">
-                            <h2>Chats privados</h2>
-                            <p class="private-helper">Selecciona un usuario o un chat abierto para conversar.</p>
-                        </div>
-                        <ul id="openChats" class="card-list"></ul>
-                        <div id="private-chat-panel" class="hidden">
-                            <div class="chat-header">
-                                <h3 id="privateChatHeading">Conversación privada</h3>
-                            </div>
-                            <div id="privateMessageArea" class="private-messages"></div>
-                            <form id="privateMessageForm" name="privateMessageForm">
-                                <div class="form-group">
-                                    <div class="input-group clearfix">
-                                        <input type="text" id="privateMessage" placeholder="Escribe un mensaje..." autocomplete="off" class="form-control"/>
-                                        <button type="submit" class="primary">Enviar</button>
-                                    </div>
-                                </div>
-                            </form>
-                        </div>
-                        <div id="noPrivateChat" class="private-empty">
-                            <p>No hay conversaciones abiertas.</p>
-                        </div>
+                        <button id="forumButton" type="button" class="primary lobby-button">Ir a chats</button>
                     </div>
                 </div>
             </section>
 
             <section id="chat-page" class="app-section hidden">
                 <div class="section-scroll">
-                    <div class="card chat-card">
-                        <div class="chat-header">
-                            <h2>Chat Demo</h2>
+                    <div id="chat-list-card" class="card">
+                        <div class="card-header">
+                            <h2>Chats abiertos</h2>
+                            <p class="private-helper">Selecciona un chat para continuar la conversación.</p>
                         </div>
-                        <div class="connecting">Connecting...</div>
-                        <ul id="messageArea"></ul>
-                        <form id="messageForm" name="messageForm" nameForm="messageForm">
+                        <ul id="openChats" class="card-list"></ul>
+                        <div id="noPrivateChat" class="private-empty">
+                            <p>No hay conversaciones abiertas todavía.</p>
+                        </div>
+                    </div>
+
+                    <div id="chat-conversation-card" class="card hidden">
+                        <div class="chat-header">
+                            <button id="backToChatList" type="button" class="icon-button" aria-label="Volver a la lista">&#8592;</button>
+                            <h3 id="privateChatHeading">Conversación privada</h3>
+                        </div>
+                        <div id="privateMessageArea" class="private-messages"></div>
+                        <form id="privateMessageForm" name="privateMessageForm">
                             <div class="form-group">
                                 <div class="input-group clearfix">
-                                    <input type="text" id="message" placeholder="Type a message..." autocomplete="off" class="form-control"/>
-                                    <button type="submit" class="primary">Send</button>
+                                    <input type="text" id="privateMessage" placeholder="Escribe un mensaje..." autocomplete="off" class="form-control"/>
+                                    <button type="submit" class="primary">Enviar</button>
                                 </div>
                             </div>
                         </form>
