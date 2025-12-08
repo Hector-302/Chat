@@ -6,7 +6,8 @@ public class ChatMessage {
         CHAT,
         JOIN,
         LEAVE,
-        PRIVATE
+        PRIVATE,
+        PRIVATE_ERROR
     }
 
     private MessageType type;

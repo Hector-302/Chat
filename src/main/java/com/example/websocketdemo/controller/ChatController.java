@@ -30,6 +30,8 @@ public class ChatController {
     @Autowired
     private ConversationHistoryService conversationHistoryService;
 
+    private static final String SYSTEM_SENDER = "system";
+
     /**
      * Se ejecuta cuando un cliente se conecta y se registra.
      * Añade al usuario al registro y notifica a todos los clientes la nueva lista de usuarios.
@@ -69,6 +71,20 @@ public class ChatController {
 
     @MessageMapping("/chat.private.{conversationId}")
     public void sendPrivate(@DestinationVariable String conversationId, @Payload ChatMessage chatMessage) {
+        if (chatMessage.getSender() == null || chatMessage.getTarget() == null) {
+            return;
+        }
+
+        if (chatMessage.getSender().equals(chatMessage.getTarget())) {
+            sendError(chatMessage.getSender(), "No puedes enviarte mensajes a ti mismo.");
+            return;
+        }
+
+        if (!userPresenceService.isKnownUser(chatMessage.getTarget())) {
+            sendError(chatMessage.getSender(), "El usuario seleccionado no existe.");
+            return;
+        }
+
         String normalizedId = buildConversationId(chatMessage.getSender(), chatMessage.getTarget());
         if (!normalizedId.isBlank()) {
             conversationId = normalizedId;
@@ -82,6 +98,15 @@ public class ChatController {
         messagingTemplate.convertAndSend("/topic/private.inbox." + chatMessage.getTarget(), chatMessage);
         messagingTemplate.convertAndSend("/topic/private.inbox." + chatMessage.getSender(), chatMessage);
         conversationHistoryService.append(chatMessage);
+    }
+
+    private void sendError(String username, String errorMessage) {
+        ChatMessage error = new ChatMessage();
+        error.setType(ChatMessage.MessageType.PRIVATE_ERROR);
+        error.setSender(SYSTEM_SENDER);
+        error.setTarget(username);
+        error.setContent(errorMessage);
+        messagingTemplate.convertAndSend("/topic/private.inbox." + username, error);
     }
 
     private String buildConversationId(String sender, String target) {

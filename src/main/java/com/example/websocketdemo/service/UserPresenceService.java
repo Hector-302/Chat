@@ -26,6 +26,14 @@ public class UserPresenceService {
         usersStatus.put(username, false);
     }
 
+    public boolean isKnownUser(String username) {
+        return username != null && usersStatus.containsKey(username);
+    }
+
+    public boolean isOnline(String username) {
+        return Boolean.TRUE.equals(usersStatus.get(username));
+    }
+
     public Collection<UserStatus> getUsersWithStatus() {
         return usersStatus.entrySet()
                 .stream()
