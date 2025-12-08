@@ -1,6 +1,7 @@
 package com.example.websocketdemo.controller;
 
 import com.example.websocketdemo.model.ChatMessage;
+import com.example.websocketdemo.service.ConversationHistoryService;
 import com.example.websocketdemo.service.SessionUserRegistry;
 import com.example.websocketdemo.service.UserPresenceService;
 import org.slf4j.Logger;
@@ -11,6 +12,7 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.messaging.SessionDisconnectEvent;
+import org.springframework.web.socket.messaging.SessionSubscribeEvent;
 
 
 @Component
@@ -26,6 +28,9 @@ public class WebSocketEventListener {
 
     @Autowired
     private UserPresenceService userPresenceService;
+
+    @Autowired
+    private ConversationHistoryService conversationHistoryService;
 
     @EventListener
     public void handleWebSocketDisconnectListener(SessionDisconnectEvent event) {
@@ -54,5 +59,24 @@ public class WebSocketEventListener {
             // Enviamos la lista de usuarios actualizada
             messagingTemplate.convertAndSend("/topic/users", userPresenceService.getUsersWithStatus());
         }
+    }
+
+    @EventListener
+    public void handleSubscription(SessionSubscribeEvent event) {
+        StompHeaderAccessor headerAccessor = StompHeaderAccessor.wrap(event.getMessage());
+        String destination = headerAccessor.getDestination();
+        if (destination == null || !destination.startsWith("/topic/private.")) {
+            return;
+        }
+
+        String conversationId = destination.substring("/topic/private.".length());
+        String username = (String) headerAccessor.getSessionAttributes().get("username");
+
+        if (conversationId == null || username == null) {
+            return;
+        }
+
+        conversationHistoryService.getHistory(conversationId)
+                .forEach(message -> messagingTemplate.convertAndSend("/topic/private.inbox." + username, message));
     }
 }

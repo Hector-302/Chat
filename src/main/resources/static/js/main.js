@@ -183,6 +183,13 @@ function startPrivateConversation(targetUser) {
     if (!conversations[conversationId]) {
         conversations[conversationId] = { target: targetUser, messages: [] };
     }
+
+    if (!conversations[conversationId].subscription && stompClient) {
+        conversations[conversationId].subscription = stompClient.subscribe('/topic/private.' + conversationId, function() {
+            // La suscripción se usa para disparar el envío del historial desde el servidor.
+            // Los mensajes en tiempo real siguen llegando por el inbox del usuario.
+        });
+    }
     setActiveConversation(conversationId);
     renderOpenChats();
 }
