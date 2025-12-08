@@ -1,12 +1,14 @@
 'use strict';
 
 var usernamePage = document.querySelector('#username-page');
+var appShell = document.querySelector('#app-shell');
+var appTitle = document.querySelector('#appTitle');
 var lobbyPage = document.querySelector('#lobby-page');
 var chatPage = document.querySelector('#chat-page');
+var settingsPage = document.querySelector('#settings-page');
 var usernameForm = document.querySelector('#usernameForm');
 var forumButton = document.querySelector('#forumButton');
 var backToLoginButton = document.querySelector('#backToLogin');
-var backToLobbyButton = document.querySelector('#backToLobby');
 var messageForm = document.querySelector('#messageForm');
 var messageInput = document.querySelector('#message');
 var messageArea = document.querySelector('#messageArea');
@@ -20,6 +22,7 @@ var privateMessageForm = document.querySelector('#privateMessageForm');
 var privateMessageInput = document.querySelector('#privateMessage');
 var privateChatHeading = document.querySelector('#privateChatHeading');
 var noPrivateChat = document.querySelector('#noPrivateChat');
+var navButtons = document.querySelectorAll('.nav-item[data-target]');
 
 var STORAGE_KEY = 'chat-state';
 
@@ -99,6 +102,40 @@ function setConnectingFeedback(message, type) {
     }
 }
 
+function updateTitle(sectionId) {
+    if (!appTitle) {
+        return;
+    }
+    var titles = {
+        'lobby-page': 'Usuarios',
+        'chat-page': 'Chat Demo',
+        'settings-page': 'Ajustes'
+    };
+
+    appTitle.textContent = titles[sectionId] || 'Chat Demo';
+}
+
+function showSection(sectionId) {
+    [lobbyPage, chatPage, settingsPage].forEach(function(section) {
+        if (!section) {
+            return;
+        }
+
+        if (section.id === sectionId) {
+            section.classList.remove('hidden');
+        } else {
+            section.classList.add('hidden');
+        }
+    });
+
+    navButtons.forEach(function(button) {
+        var isActive = button.dataset.target === sectionId;
+        button.classList.toggle('active', isActive);
+    });
+
+    updateTitle(sectionId);
+}
+
 function restoreStateAfterLogin() {
     var state = loadSavedState();
     if (!state || state.username !== username) {
@@ -129,7 +166,11 @@ function login(event) {
 
     if(username) {
         usernamePage.classList.add('hidden');
-        lobbyPage.classList.remove('hidden');
+        if (appShell) {
+            appShell.classList.remove('hidden');
+        }
+
+        showSection('lobby-page');
 
         showConnectionStatus('Conectando...', 'info');
 
@@ -164,8 +205,7 @@ function onConnected() {
 }
 
 function connect(event) {
-    lobbyPage.classList.add('hidden');
-    chatPage.classList.remove('hidden');
+    showSection('chat-page');
 
     publicChatSubscription = stompClient.subscribe('/topic/public', onMessageReceived);
 
@@ -177,8 +217,11 @@ function connect(event) {
 }
 
 function showLogin(event) {
-    lobbyPage.classList.add('hidden');
+    showSection('lobby-page');
     usernamePage.classList.remove('hidden');
+    if (appShell) {
+        appShell.classList.add('hidden');
+    }
 
     resetPrivateChats();
 
@@ -192,8 +235,7 @@ function showLogin(event) {
 }
 
 function showLobby(event) {
-    chatPage.classList.add('hidden');
-    lobbyPage.classList.remove('hidden');
+    showSection('lobby-page');
 
     if (publicChatSubscription) {
         publicChatSubscription.unsubscribe();
@@ -610,6 +652,11 @@ function getUnreadCountForUser(user) {
 usernameForm.addEventListener('submit', login, true);
 forumButton.addEventListener('click', connect, true);
 backToLoginButton.addEventListener('click', showLogin, true);
-backToLobbyButton.addEventListener('click', showLobby, true);
 messageForm.addEventListener('submit', sendMessage, true);
 privateMessageForm.addEventListener('submit', sendPrivateMessage, true);
+
+navButtons.forEach(function(button) {
+    button.addEventListener('click', function() {
+        showSection(button.dataset.target);
+    });
+});
