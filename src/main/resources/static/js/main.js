@@ -487,14 +487,33 @@ function renderConversationMessages(conversationId) {
         var row = document.createElement('div');
         row.classList.add('message-row');
 
+        var isOwnMessage = msg.sender === username;
+        row.classList.add(isOwnMessage ? 'outgoing' : 'incoming');
+
+        var bubble = document.createElement('div');
+        bubble.classList.add('message-bubble');
+
+        var text = document.createElement('p');
+        text.classList.add('message-text');
+        text.textContent = msg.content;
+        bubble.appendChild(text);
+
+        var meta = document.createElement('div');
+        meta.classList.add('message-meta');
+
         var senderSpan = document.createElement('span');
         senderSpan.classList.add('sender');
-        senderSpan.textContent = msg.sender + ':';
-        row.appendChild(senderSpan);
+        senderSpan.textContent = isOwnMessage ? 'Tú' : msg.sender;
 
-        var text = document.createElement('span');
-        text.textContent = msg.content;
-        row.appendChild(text);
+        var time = document.createElement('span');
+        time.classList.add('timestamp');
+        time.textContent = formatTimestamp(msg.createdAt || Date.now());
+
+        meta.appendChild(senderSpan);
+        meta.appendChild(time);
+        bubble.appendChild(meta);
+
+        row.appendChild(bubble);
 
         privateMessageArea.appendChild(row);
     });
@@ -662,6 +681,14 @@ function appendMessageIfNew(conversationId, message) {
         return true;
     }
     return false;
+}
+
+function formatTimestamp(timestamp) {
+    var date = new Date(timestamp);
+    if (isNaN(date.getTime())) {
+        return '';
+    }
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
 function markConversationAsRead(conversationId) {
