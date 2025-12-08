@@ -122,16 +122,42 @@ function onUsersReceived(payload) {
     var users = JSON.parse(payload.body);
     connectedUsers.innerHTML = ''; // Limpia el mensaje "Conectando..." o la lista anterior
 
-    if (users.length === 0) {
+    if (!users || users.length === 0) {
         var li = document.createElement('li');
         li.textContent = 'No hay usuarios conectados';
         connectedUsers.appendChild(li);
     } else {
-        users.forEach(function(user) {
-            var li = document.createElement('li');
-            li.textContent = user;
-            connectedUsers.appendChild(li);
-        });
+        users
+            .slice()
+            .sort(function(a, b) {
+                if (a.online === b.online) {
+                    return a.username.localeCompare(b.username);
+                }
+                return a.online ? -1 : 1;
+            })
+            .forEach(function(user) {
+                var li = document.createElement('li');
+                li.classList.add('user-row');
+
+                var statusIndicator = document.createElement('span');
+                statusIndicator.classList.add('user-status');
+                statusIndicator.classList.add(user.online ? 'online' : 'offline');
+                statusIndicator.title = user.online ? 'En línea' : 'Desconectado';
+
+                var nameElement = document.createElement('span');
+                nameElement.classList.add('user-name');
+                nameElement.textContent = user.username;
+
+                var stateLabel = document.createElement('span');
+                stateLabel.classList.add('user-state-label');
+                stateLabel.classList.add(user.online ? 'online' : 'offline');
+                stateLabel.textContent = user.online ? 'En línea' : 'Desconectado';
+
+                li.appendChild(statusIndicator);
+                li.appendChild(nameElement);
+                li.appendChild(stateLabel);
+                connectedUsers.appendChild(li);
+            });
     }
 }
 

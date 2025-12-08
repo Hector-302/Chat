@@ -2,6 +2,7 @@ package com.example.websocketdemo.controller;
 
 import com.example.websocketdemo.model.ChatMessage;
 import com.example.websocketdemo.service.SessionUserRegistry;
+import com.example.websocketdemo.service.UserPresenceService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
@@ -19,6 +20,9 @@ public class ChatController {
     @Autowired
     private SessionUserRegistry sessionUserRegistry;
 
+    @Autowired
+    private UserPresenceService userPresenceService;
+
     /**
      * Se ejecuta cuando un cliente se conecta y se registra.
      * Añade al usuario al registro y notifica a todos los clientes la nueva lista de usuarios.
@@ -32,8 +36,11 @@ public class ChatController {
         // Añade el usuario al registro
         sessionUserRegistry.addUser(headerAccessor.getSessionId(), username);
 
+        // Registra al usuario y lo marca como conectado
+        userPresenceService.markOnline(username);
+
         // Envía la lista de usuarios actualizada a todos los suscritos a /topic/users
-        messagingTemplate.convertAndSend("/topic/users", sessionUserRegistry.getAllUsers());
+        messagingTemplate.convertAndSend("/topic/users", userPresenceService.getUsersWithStatus());
     }
 
     /**

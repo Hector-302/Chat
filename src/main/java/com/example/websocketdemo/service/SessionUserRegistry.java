@@ -4,11 +4,12 @@ import org.springframework.stereotype.Service;
 
 import java.util.Collection;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 @Service
 public class SessionUserRegistry {
 
-    private final ConcurrentHashMap<String, String> sessionIdToUsername = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, String> sessionIdToUsername = new ConcurrentHashMap<>();
 
     public void addUser(String sessionId, String username) {
         if (sessionId != null && username != null) {
@@ -18,6 +19,10 @@ public class SessionUserRegistry {
 
     public String removeUser(String sessionId) {
         return sessionIdToUsername.remove(sessionId);
+    }
+
+    public boolean hasActiveSession(String username) {
+        return username != null && sessionIdToUsername.containsValue(username);
     }
 
     public Collection<String> getAllUsers() {

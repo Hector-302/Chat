@@ -300,4 +300,44 @@ button.accent {
 #lobby-page ul {
     list-style-type: none;
     padding: 0;
+    margin: 0;
+}
+
+#lobby-page #connectedUsers .user-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 4px;
+    border-bottom: 1px solid #f1f1f1;
+}
+
+#lobby-page #connectedUsers .user-status {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    display: inline-block;
+    background: #c1c1c1;
+}
+
+#lobby-page #connectedUsers .user-status.online {
+    background: #2ecc71;
+    box-shadow: 0 0 0 4px rgba(46, 204, 113, 0.15);
+}
+
+#lobby-page #connectedUsers .user-status.offline {
+    background: #c1c1c1;
+}
+
+#lobby-page #connectedUsers .user-name {
+    flex: 1;
+    font-weight: 600;
+}
+
+#lobby-page #connectedUsers .user-state-label {
+    font-size: 12px;
+    color: #777;
+}
+
+#lobby-page #connectedUsers .user-state-label.online {
+    color: #2c9c5d;
 }
