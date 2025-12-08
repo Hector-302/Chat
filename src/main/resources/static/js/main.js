@@ -17,13 +17,15 @@ var connectionStatusBanner = document.querySelector('#connectionStatus');
 var connectedUsers = document.querySelector('#connectedUsers');
 var connectedUsersSearch = document.querySelector('#connectedUsersSearch');
 var openChats = document.querySelector('#openChats');
-var privateChatPanel = document.querySelector('#private-chat-panel');
+var chatListCard = document.querySelector('#chat-list-card');
+var chatConversationCard = document.querySelector('#chat-conversation-card');
 var privateMessageArea = document.querySelector('#privateMessageArea');
 var privateMessageForm = document.querySelector('#privateMessageForm');
 var privateMessageInput = document.querySelector('#privateMessage');
 var privateChatHeading = document.querySelector('#privateChatHeading');
 var noPrivateChat = document.querySelector('#noPrivateChat');
 var navButtons = document.querySelectorAll('.nav-item[data-target]');
+var backToChatListButton = document.querySelector('#backToChatList');
 
 var STORAGE_KEY = 'chat-state';
 
@@ -110,7 +112,7 @@ function updateTitle(sectionId) {
     }
     var titles = {
         'lobby-page': 'Usuarios',
-        'chat-page': 'Chat Demo',
+        'chat-page': 'Chats',
         'settings-page': 'Ajustes'
     };
 
@@ -136,6 +138,24 @@ function showSection(sectionId) {
     });
 
     updateTitle(sectionId);
+}
+
+function showChatListView() {
+    if (chatListCard) {
+        chatListCard.classList.remove('hidden');
+    }
+    if (chatConversationCard) {
+        chatConversationCard.classList.add('hidden');
+    }
+}
+
+function showChatConversationView() {
+    if (chatListCard) {
+        chatListCard.classList.add('hidden');
+    }
+    if (chatConversationCard) {
+        chatConversationCard.classList.remove('hidden');
+    }
 }
 
 function restoreStateAfterLogin() {
@@ -243,8 +263,18 @@ function showLobby(event) {
         publicChatSubscription.unsubscribe();
         publicChatSubscription = null;
     }
-    messageArea.innerHTML = '';
+    if (messageArea) {
+        messageArea.innerHTML = '';
+    }
     event.preventDefault();
+}
+
+function goToChatList(event) {
+    showSection('chat-page');
+    showChatListView();
+    if (event) {
+        event.preventDefault();
+    }
 }
 
 function resetPrivateChats() {
@@ -252,7 +282,7 @@ function resetPrivateChats() {
     activeConversationId = null;
     openChats.innerHTML = '';
     privateMessageArea.innerHTML = '';
-    privateChatPanel.classList.add('hidden');
+    showChatListView();
     noPrivateChat.classList.remove('hidden');
 }
 
@@ -366,6 +396,8 @@ function startPrivateConversation(targetUser) {
     ensureConversation(conversationId, targetUser);
 
     subscribeToConversation(conversationId, targetUser);
+    showSection('chat-page');
+    showChatConversationView();
     setActiveConversation(conversationId);
     renderOpenChats();
     persistState();
@@ -396,7 +428,7 @@ function setActiveConversation(conversationId) {
 
     markConversationAsRead(conversationId);
 
-    privateChatPanel.classList.remove('hidden');
+    showChatConversationView();
     noPrivateChat.classList.add('hidden');
     privateChatHeading.textContent = 'Chat con ' + conversation.target;
     renderConversationMessages(conversationId);
@@ -416,6 +448,7 @@ function renderOpenChats() {
             button.classList.add('active-chat');
         }
         button.addEventListener('click', function() {
+            showChatConversationView();
             setActiveConversation(id);
         });
         li.appendChild(button);
@@ -437,7 +470,9 @@ function renderOpenChats() {
 
     if (Object.keys(conversations).length === 0) {
         noPrivateChat.classList.remove('hidden');
-        privateChatPanel.classList.add('hidden');
+        showChatListView();
+    } else {
+        noPrivateChat.classList.add('hidden');
     }
 }
 
@@ -666,17 +701,32 @@ function getUnreadCountForUser(user) {
 }
 
 usernameForm.addEventListener('submit', login, true);
-forumButton.addEventListener('click', connect, true);
+if (forumButton) {
+    forumButton.addEventListener('click', goToChatList, true);
+}
 backToLoginButton.addEventListener('click', showLogin, true);
-messageForm.addEventListener('submit', sendMessage, true);
-privateMessageForm.addEventListener('submit', sendPrivateMessage, true);
+if (messageForm) {
+    messageForm.addEventListener('submit', sendMessage, true);
+}
+if (privateMessageForm) {
+    privateMessageForm.addEventListener('submit', sendPrivateMessage, true);
+}
 
 navButtons.forEach(function(button) {
     button.addEventListener('click', function() {
         showSection(button.dataset.target);
+        if (button.dataset.target === 'chat-page') {
+            showChatListView();
+        }
     });
 });
 
 if (connectedUsersSearch) {
     connectedUsersSearch.addEventListener('input', renderConnectedUsers);
+}
+
+if (backToChatListButton) {
+    backToChatListButton.addEventListener('click', function() {
+        showChatListView();
+    });
 }
