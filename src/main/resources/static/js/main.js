@@ -20,6 +20,8 @@ var privateMessageInput = document.querySelector('#privateMessage');
 var privateChatHeading = document.querySelector('#privateChatHeading');
 var noPrivateChat = document.querySelector('#noPrivateChat');
 
+var STORAGE_KEY = 'chat-state';
+
 var stompClient = null;
 var username = null;
 var publicChatSubscription = null;
@@ -31,6 +33,71 @@ var colors = [
     '#2196F3', '#32c787', '#00BCD4', '#ff5652',
     '#ffc107', '#ff85af', '#FF9800', '#39bbb0'
 ];
+
+var savedState = loadSavedState();
+if (savedState && savedState.username) {
+    document.querySelector('#name').value = savedState.username;
+}
+
+function loadSavedState() {
+    try {
+        var raw = localStorage.getItem(STORAGE_KEY);
+        return raw ? JSON.parse(raw) : null;
+    } catch (e) {
+        console.warn('No se pudo leer el estado guardado', e);
+        return null;
+    }
+}
+
+function persistState() {
+    if (!username) {
+        return;
+    }
+    try {
+        var serializableConversations = {};
+        Object.keys(conversations).forEach(function(id) {
+            var conversation = conversations[id];
+            serializableConversations[id] = {
+                target: conversation.target,
+                messages: conversation.messages || [],
+                unreadCount: conversation.unreadCount || 0
+            };
+        });
+
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({
+            username: username,
+            conversations: serializableConversations,
+            activeConversationId: activeConversationId
+        }));
+    } catch (e) {
+        console.warn('No se pudo guardar el estado', e);
+    }
+}
+
+function restoreStateAfterLogin() {
+    var state = loadSavedState();
+    if (!state || state.username !== username) {
+        return;
+    }
+
+    conversations = state.conversations || {};
+    activeConversationId = state.activeConversationId || null;
+
+    Object.keys(conversations).forEach(function(id) {
+        var conversation = conversations[id];
+        conversation.messages = conversation.messages || [];
+        conversation.unreadCount = conversation.unreadCount || 0;
+        subscribeToConversation(id, conversation.target);
+    });
+
+    renderOpenChats();
+
+    if (activeConversationId && conversations[activeConversationId]) {
+        setActiveConversation(activeConversationId);
+    }
+
+    refreshUserUnreadBadges();
+}
 
 function login(event) {
     username = document.querySelector('#name').value.trim();
@@ -59,6 +126,8 @@ function onConnected() {
         {},
         JSON.stringify({sender: username, type: 'JOIN'})
     );
+
+    restoreStateAfterLogin();
 }
 
 function connect(event) {
@@ -195,18 +264,26 @@ function startPrivateConversation(targetUser) {
 
     ensureConversation(conversationId, targetUser);
 
-    if (!conversations[conversationId].subscription && stompClient) {
-        conversations[conversationId].subscription = stompClient.subscribe('/topic/private.' + conversationId, function() {
-            // La suscripción se usa para disparar el envío del historial desde el servidor.
-            // Los mensajes en tiempo real siguen llegando por el inbox del usuario.
-        });
-    }
+    subscribeToConversation(conversationId, targetUser);
     setActiveConversation(conversationId);
     renderOpenChats();
+    persistState();
 }
 
 function buildConversationId(userA, userB) {
     return [userA, userB].sort().join('-');
+}
+
+function subscribeToConversation(conversationId, targetUser) {
+    ensureConversation(conversationId, targetUser);
+    var conversation = conversations[conversationId];
+
+    if (!conversation.subscription && stompClient) {
+        conversation.subscription = stompClient.subscribe('/topic/private.' + conversationId, function() {
+            // La suscripción se usa para disparar el envío del historial desde el servidor.
+            // Los mensajes en tiempo real siguen llegando por el inbox del usuario.
+        });
+    }
 }
 
 function setActiveConversation(conversationId) {
@@ -224,6 +301,7 @@ function setActiveConversation(conversationId) {
     renderConversationMessages(conversationId);
     renderOpenChats();
     refreshUserUnreadBadges();
+    persistState();
 }
 
 function renderOpenChats() {
@@ -331,16 +409,15 @@ function onPrivateMessageReceived(payload) {
         activeConversationId = conversationId;
     }
 
-    conversations[conversationId].messages.push({
-        sender: message.sender,
-        content: message.content
-    });
+    var added = appendMessageIfNew(conversationId, message);
 
-    if (conversationId === activeConversationId) {
-        renderConversationMessages(conversationId);
-        markConversationAsRead(conversationId);
-    } else if (message.sender !== username) {
-        conversations[conversationId].unreadCount = (conversations[conversationId].unreadCount || 0) + 1;
+    if (added) {
+        if (conversationId === activeConversationId) {
+            renderConversationMessages(conversationId);
+            markConversationAsRead(conversationId);
+        } else if (message.sender !== username) {
+            conversations[conversationId].unreadCount = (conversations[conversationId].unreadCount || 0) + 1;
+        }
     }
 
     if (activeConversationId === conversationId) {
@@ -349,6 +426,7 @@ function onPrivateMessageReceived(payload) {
 
     renderOpenChats();
     refreshUserUnreadBadges();
+    persistState();
 }
 
 function sendPrivateMessage(event) {
@@ -385,11 +463,42 @@ function ensureConversation(conversationId, targetUser) {
     if (!conversations[conversationId]) {
         conversations[conversationId] = { target: targetUser, messages: [], unreadCount: 0 };
     }
+    if (!conversations[conversationId].messages) {
+        conversations[conversationId].messages = [];
+    }
+    if (conversations[conversationId].unreadCount === undefined) {
+        conversations[conversationId].unreadCount = 0;
+    }
+}
+
+function appendMessageIfNew(conversationId, message) {
+    var conversation = conversations[conversationId];
+    if (!conversation) {
+        return false;
+    }
+
+    var createdAt = message.createdAt || Date.now();
+    var exists = conversation.messages.some(function(existing) {
+        return existing.sender === message.sender &&
+            existing.content === message.content &&
+            existing.createdAt === createdAt;
+    });
+
+    if (!exists) {
+        conversation.messages.push({
+            sender: message.sender,
+            content: message.content,
+            createdAt: createdAt
+        });
+        return true;
+    }
+    return false;
 }
 
 function markConversationAsRead(conversationId) {
     if (conversations[conversationId]) {
         conversations[conversationId].unreadCount = 0;
+        persistState();
     }
 }
 

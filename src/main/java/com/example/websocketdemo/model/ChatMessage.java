@@ -14,6 +14,7 @@ public class ChatMessage {
     private String sender;
     private String target;
     private String conversationId;
+    private Long createdAt;
 
     public MessageType getType() {
         return type;
@@ -53,5 +54,13 @@ public class ChatMessage {
 
     public void setConversationId(String conversationId) {
         this.conversationId = conversationId;
+    }
+
+    public Long getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(Long createdAt) {
+        this.createdAt = createdAt;
     }
 }
