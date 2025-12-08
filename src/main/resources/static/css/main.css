@@ -254,6 +254,12 @@ button.accent {
     height: 100%;
 }
 
+#chat-page .section-scroll {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
 #chat-page ul {
     list-style-type: none;
     background-color: #FFF;
@@ -572,16 +578,29 @@ button.accent {
     flex: 1;
 }
 
+#chat-conversation-card {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+}
+
 .private-messages {
-    padding: 10px 20px;
+    padding: 12px 14px 10px;
     overflow-y: auto;
-    height: 220px;
+    flex: 1;
+    min-height: 0;
     border-top: 1px solid #ececec;
     border-bottom: 1px solid #ececec;
+    scroll-behavior: smooth;
+    background: linear-gradient(180deg, #f9fbff 0%, #fff 40%);
 }
 
 .private-messages .message-row {
-    margin-bottom: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 12px;
 }
 
 .private-messages .message-row .sender {
@@ -592,6 +611,57 @@ button.accent {
 .private-messages .message-row.system-row {
     color: #ff4743;
     font-weight: 600;
+}
+
+.private-messages .message-row .message-bubble {
+    max-width: 86%;
+    padding: 10px 12px;
+    border-radius: 14px;
+    position: relative;
+    word-break: break-word;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.06);
+}
+
+.private-messages .message-row.outgoing {
+    align-items: flex-end;
+}
+
+.private-messages .message-row.outgoing .message-bubble {
+    background: #128ff2;
+    color: #fff;
+    border-bottom-right-radius: 6px;
+}
+
+.private-messages .message-row.incoming {
+    align-items: flex-start;
+}
+
+.private-messages .message-row.incoming .message-bubble {
+    background: #eef2ff;
+    color: #1f2933;
+    border-bottom-left-radius: 6px;
+}
+
+.private-messages .message-row .message-meta {
+    font-size: 12px;
+    color: #6b7280;
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.private-messages .message-row.outgoing .message-meta {
+    color: #e5e7eb;
+}
+
+.private-messages .message-row .message-text {
+    margin: 0;
+    font-size: 15px;
+    white-space: pre-wrap;
+}
+
+.private-messages .message-row .timestamp {
+    opacity: 0.85;
 }
 
 .private-empty {
@@ -621,4 +691,6 @@ button.accent {
 
 #privateMessageForm {
     padding: 10px 20px 20px 20px;
+    margin-top: auto;
+    background: #fff;
 }
