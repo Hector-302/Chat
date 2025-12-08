@@ -24,63 +24,101 @@
         </div>
     </div>
 
-    <div id="lobby-page" class="hidden">
-        <div id="connectionStatus" class="status-banner hidden">Conectando...</div>
-        <div class="lobby-layout">
-            <div class="chat-container">
-                <button id="backToLogin" type="button" class="default">Volver</button>
-                <h2>Usuarios conectados</h2>
-                <ul id="connectedUsers"></ul>
-                <button id="forumButton" type="button" class="primary lobby-button">Entrar al foro</button>
-            </div>
-            <div class="chat-container private-container">
-                <div class="private-panel-header">
-                    <h2>Chats privados</h2>
-                    <p class="private-helper">Selecciona un usuario o un chat abierto para conversar.</p>
-                </div>
-                <ul id="openChats"></ul>
-                <div id="private-chat-panel" class="hidden">
-                    <div class="chat-header">
-                        <h3 id="privateChatHeading">Conversación privada</h3>
-                    </div>
-                    <div id="privateMessageArea" class="private-messages"></div>
-                    <form id="privateMessageForm" name="privateMessageForm">
-                        <div class="form-group">
-                            <div class="input-group clearfix">
-                                <input type="text" id="privateMessage" placeholder="Escribe un mensaje..." autocomplete="off" class="form-control"/>
-                                <button type="submit" class="primary">Enviar</button>
-                            </div>
+    <div id="app-shell" class="hidden">
+        <header class="app-header">
+            <button id="backToLogin" type="button" class="icon-button" aria-label="Volver">
+                &#8592;
+            </button>
+            <h1 id="appTitle">Chat Demo</h1>
+        </header>
+
+        <main class="app-main">
+            <section id="lobby-page" class="app-section hidden">
+                <div class="section-scroll">
+                    <div id="connectionStatus" class="status-banner hidden">Conectando...</div>
+                    <div class="card">
+                        <div class="card-header">
+                            <h2>Usuarios conectados</h2>
                         </div>
-                    </form>
-                </div>
-                <div id="noPrivateChat" class="private-empty">
-                    <p>No hay conversaciones abiertas.</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div id="chat-page" class="hidden">
-        <div class="chat-container">
-            <button id="backToLobby" type="button" class="default">Volver</button>
-            <div class="chat-header">
-                <h2>Chat Demo</h2>
-            </div>
-            <div class="connecting">
-                Connecting...
-            </div>
-            <ul id="messageArea">
-
-            </ul>
-            <form id="messageForm" name="messageForm" nameForm="messageForm">
-                <div class="form-group">
-                    <div class="input-group clearfix">
-                        <input type="text" id="message" placeholder="Type a message..." autocomplete="off" class="form-control"/>
-                        <button type="submit" class="primary">Send</button>
+                        <ul id="connectedUsers" class="card-list"></ul>
+                        <button id="forumButton" type="button" class="primary lobby-button">Entrar al foro</button>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">
+                            <h2>Chats privados</h2>
+                            <p class="private-helper">Selecciona un usuario o un chat abierto para conversar.</p>
+                        </div>
+                        <ul id="openChats" class="card-list"></ul>
+                        <div id="private-chat-panel" class="hidden">
+                            <div class="chat-header">
+                                <h3 id="privateChatHeading">Conversación privada</h3>
+                            </div>
+                            <div id="privateMessageArea" class="private-messages"></div>
+                            <form id="privateMessageForm" name="privateMessageForm">
+                                <div class="form-group">
+                                    <div class="input-group clearfix">
+                                        <input type="text" id="privateMessage" placeholder="Escribe un mensaje..." autocomplete="off" class="form-control"/>
+                                        <button type="submit" class="primary">Enviar</button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                        <div id="noPrivateChat" class="private-empty">
+                            <p>No hay conversaciones abiertas.</p>
+                        </div>
                     </div>
                 </div>
-            </form>
-        </div>
+            </section>
+
+            <section id="chat-page" class="app-section hidden">
+                <div class="section-scroll">
+                    <div class="card chat-card">
+                        <div class="chat-header">
+                            <h2>Chat Demo</h2>
+                        </div>
+                        <div class="connecting">Connecting...</div>
+                        <ul id="messageArea"></ul>
+                        <form id="messageForm" name="messageForm" nameForm="messageForm">
+                            <div class="form-group">
+                                <div class="input-group clearfix">
+                                    <input type="text" id="message" placeholder="Type a message..." autocomplete="off" class="form-control"/>
+                                    <button type="submit" class="primary">Send</button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </section>
+
+            <section id="settings-page" class="app-section hidden">
+                <div class="section-scroll">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2>Ajustes</h2>
+                            <p class="private-helper">Configura tu experiencia dentro de la app móvil.</p>
+                        </div>
+                        <div class="settings-content">
+                            <p>Selecciona una conversación para actualizar tus preferencias o vuelve al lobby para iniciar un chat.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <nav class="bottom-nav">
+            <button class="nav-item active" data-target="lobby-page" type="button">
+                <span class="nav-icon">&#128101;</span>
+                <span class="nav-label">Usuarios</span>
+            </button>
+            <button class="nav-item" data-target="chat-page" type="button">
+                <span class="nav-icon">&#128172;</span>
+                <span class="nav-label">Chats</span>
+            </button>
+            <button class="nav-item" data-target="settings-page" type="button">
+                <span class="nav-icon">&#9881;</span>
+                <span class="nav-label">Ajustes</span>
+            </button>
+        </nav>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.1.4/sockjs.min.js"></script>
