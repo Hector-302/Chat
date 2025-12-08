@@ -1,6 +1,7 @@
 package com.example.websocketdemo.controller;
 
 import com.example.websocketdemo.model.ChatMessage;
+import com.example.websocketdemo.service.ConversationHistoryService;
 import com.example.websocketdemo.service.SessionUserRegistry;
 import com.example.websocketdemo.service.UserPresenceService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,6 +26,9 @@ public class ChatController {
 
     @Autowired
     private UserPresenceService userPresenceService;
+
+    @Autowired
+    private ConversationHistoryService conversationHistoryService;
 
     /**
      * Se ejecuta cuando un cliente se conecta y se registra.
@@ -74,6 +78,7 @@ public class ChatController {
         messagingTemplate.convertAndSend("/topic/private." + conversationId, chatMessage);
         messagingTemplate.convertAndSend("/topic/private.inbox." + chatMessage.getTarget(), chatMessage);
         messagingTemplate.convertAndSend("/topic/private.inbox." + chatMessage.getSender(), chatMessage);
+        conversationHistoryService.append(chatMessage);
     }
 
     private String buildConversationId(String sender, String target) {
