@@ -12,9 +12,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.socket.messaging.SessionConnectedEvent;
 import org.springframework.web.socket.messaging.SessionDisconnectEvent;
 
-/**
- * Created by rajeevkumarsingh on 25/07/17.
- */
+
 @Component
 public class WebSocketEventListener {
 
@@ -27,33 +25,24 @@ public class WebSocketEventListener {
     private SessionUserRegistry sessionUserRegistry;
 
     @EventListener
-    public void handleWebSocketConnectListener(SessionConnectedEvent event) {
-        StompHeaderAccessor headerAccessor = StompHeaderAccessor.wrap(event.getMessage());
-        String username = headerAccessor.getFirstNativeHeader("username");
-        if (username != null) {
-            sessionUserRegistry.addUser(headerAccessor.getSessionId(), username);
-            messagingTemplate.convertAndSend("/topic/users", sessionUserRegistry.getAllUsers());
-            logger.info("User Connected : " + username);
-        } else {
-            logger.info("Received a new web socket connection");
-        }
-    }
-
-    @EventListener
     public void handleWebSocketDisconnectListener(SessionDisconnectEvent event) {
         StompHeaderAccessor headerAccessor = StompHeaderAccessor.wrap(event.getMessage());
+        String sessionId = headerAccessor.getSessionId();
 
-        String username = sessionUserRegistry.removeUser(headerAccessor.getSessionId());
+        // Usamos el sessionId para eliminar al usuario y obtener su nombre
+        String username = sessionUserRegistry.removeUser(sessionId);
+
         if (username != null) {
             logger.info("User Disconnected : " + username);
 
+            // Creamos un mensaje de LEAVE para el chat público
             ChatMessage chatMessage = new ChatMessage();
             chatMessage.setType(ChatMessage.MessageType.LEAVE);
             chatMessage.setSender(username);
-
             messagingTemplate.convertAndSend("/topic/public", chatMessage);
-        }
 
-        messagingTemplate.convertAndSend("/topic/users", sessionUserRegistry.getAllUsers());
+            // Enviamos la lista de usuarios actualizada
+            messagingTemplate.convertAndSend("/topic/users", sessionUserRegistry.getAllUsers());
+        }
     }
 }
