@@ -129,6 +129,7 @@ function onUsersReceived(payload) {
             .forEach(function(user) {
                 var li = document.createElement('li');
                 li.classList.add('user-row');
+                li.dataset.username = user.username;
 
                 var statusIndicator = document.createElement('span');
                 statusIndicator.classList.add('user-status');
@@ -144,6 +145,14 @@ function onUsersReceived(payload) {
                 stateLabel.classList.add(user.online ? 'online' : 'offline');
                 stateLabel.textContent = user.online ? 'En línea' : 'Desconectado';
 
+                var unread = getUnreadCountForUser(user.username);
+                var unreadBadge = null;
+                if (unread > 0) {
+                    unreadBadge = document.createElement('span');
+                    unreadBadge.classList.add('unread-badge');
+                    unreadBadge.textContent = unread;
+                }
+
                 if (user.online && user.username !== username) {
                     li.addEventListener('click', function() {
                         startPrivateConversation(user.username);
@@ -153,6 +162,9 @@ function onUsersReceived(payload) {
                 li.appendChild(statusIndicator);
                 li.appendChild(nameElement);
                 li.appendChild(stateLabel);
+                if (unreadBadge) {
+                    li.appendChild(unreadBadge);
+                }
                 connectedUsers.appendChild(li);
             });
     }
@@ -180,9 +192,8 @@ function sendMessage(event) {
 
 function startPrivateConversation(targetUser) {
     var conversationId = buildConversationId(username, targetUser);
-    if (!conversations[conversationId]) {
-        conversations[conversationId] = { target: targetUser, messages: [] };
-    }
+
+    ensureConversation(conversationId, targetUser);
 
     if (!conversations[conversationId].subscription && stompClient) {
         conversations[conversationId].subscription = stompClient.subscribe('/topic/private.' + conversationId, function() {
@@ -205,11 +216,14 @@ function setActiveConversation(conversationId) {
         return;
     }
 
+    markConversationAsRead(conversationId);
+
     privateChatPanel.classList.remove('hidden');
     noPrivateChat.classList.add('hidden');
     privateChatHeading.textContent = 'Chat con ' + conversation.target;
     renderConversationMessages(conversationId);
     renderOpenChats();
+    refreshUserUnreadBadges();
 }
 
 function renderOpenChats() {
@@ -231,6 +245,13 @@ function renderOpenChats() {
         meta.classList.add('chat-meta');
         meta.textContent = conversation.messages.length + ' msgs';
         li.appendChild(meta);
+
+        if (conversation.unreadCount) {
+            var unreadChip = document.createElement('span');
+            unreadChip.classList.add('unread-badge');
+            unreadChip.textContent = conversation.unreadCount + ' sin leer';
+            li.appendChild(unreadChip);
+        }
 
         openChats.appendChild(li);
     });
@@ -304,12 +325,10 @@ function onPrivateMessageReceived(payload) {
     var message = JSON.parse(payload.body);
     var conversationId = message.conversationId || buildConversationId(message.sender, message.target);
 
-    if (!conversations[conversationId]) {
-        var targetUser = message.sender === username ? message.target : message.sender;
-        conversations[conversationId] = { target: targetUser, messages: [] };
-        if (!activeConversationId) {
-            activeConversationId = conversationId;
-        }
+    var targetUser = message.sender === username ? message.target : message.sender;
+    ensureConversation(conversationId, targetUser);
+    if (!activeConversationId) {
+        activeConversationId = conversationId;
     }
 
     conversations[conversationId].messages.push({
@@ -319,6 +338,9 @@ function onPrivateMessageReceived(payload) {
 
     if (conversationId === activeConversationId) {
         renderConversationMessages(conversationId);
+        markConversationAsRead(conversationId);
+    } else if (message.sender !== username) {
+        conversations[conversationId].unreadCount = (conversations[conversationId].unreadCount || 0) + 1;
     }
 
     if (activeConversationId === conversationId) {
@@ -326,6 +348,7 @@ function onPrivateMessageReceived(payload) {
     }
 
     renderOpenChats();
+    refreshUserUnreadBadges();
 }
 
 function sendPrivateMessage(event) {
@@ -356,6 +379,47 @@ function getAvatarColor(messageSender) {
     }
     var index = Math.abs(hash % colors.length);
     return colors[index];
+}
+
+function ensureConversation(conversationId, targetUser) {
+    if (!conversations[conversationId]) {
+        conversations[conversationId] = { target: targetUser, messages: [], unreadCount: 0 };
+    }
+}
+
+function markConversationAsRead(conversationId) {
+    if (conversations[conversationId]) {
+        conversations[conversationId].unreadCount = 0;
+    }
+}
+
+function refreshUserUnreadBadges() {
+    var userRows = connectedUsers.querySelectorAll('.user-row');
+    userRows.forEach(function(row) {
+        var user = row.dataset.username;
+        var unread = getUnreadCountForUser(user);
+        var badge = row.querySelector('.unread-badge');
+
+        if (unread > 0) {
+            if (!badge) {
+                badge = document.createElement('span');
+                badge.classList.add('unread-badge');
+                row.appendChild(badge);
+            }
+            badge.textContent = unread;
+        } else if (badge) {
+            badge.remove();
+        }
+    });
+}
+
+function getUnreadCountForUser(user) {
+    if (!user || user === username) {
+        return 0;
+    }
+    var id = buildConversationId(username, user);
+    var conversation = conversations[id];
+    return conversation && conversation.unreadCount ? conversation.unreadCount : 0;
 }
 
 usernameForm.addEventListener('submit', login, true);

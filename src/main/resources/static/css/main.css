@@ -342,6 +342,16 @@ button.accent {
     color: #2c9c5d;
 }
 
+.unread-badge {
+    background: #ff4743;
+    color: #fff;
+    border-radius: 12px;
+    padding: 2px 8px;
+    font-size: 12px;
+    font-weight: 700;
+    margin-left: auto;
+}
+
 .lobby-layout {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
@@ -402,6 +412,10 @@ button.accent {
     color: #999;
     font-size: 12px;
     margin-left: 8px;
+}
+
+#openChats .unread-badge {
+    margin-left: 10px;
 }
 
 #private-chat-panel {
