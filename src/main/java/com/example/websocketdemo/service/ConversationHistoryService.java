@@ -62,6 +62,7 @@ public class ConversationHistoryService {
         copy.setSender(original.getSender());
         copy.setTarget(original.getTarget());
         copy.setConversationId(original.getConversationId());
+        copy.setCreatedAt(original.getCreatedAt());
         return copy;
     }
 }

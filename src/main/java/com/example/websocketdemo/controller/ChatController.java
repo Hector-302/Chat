@@ -73,6 +73,9 @@ public class ChatController {
         if (!normalizedId.isBlank()) {
             conversationId = normalizedId;
         }
+        if (chatMessage.getCreatedAt() == null) {
+            chatMessage.setCreatedAt(System.currentTimeMillis());
+        }
         chatMessage.setConversationId(conversationId);
         chatMessage.setType(ChatMessage.MessageType.PRIVATE);
         messagingTemplate.convertAndSend("/topic/private." + conversationId, chatMessage);
